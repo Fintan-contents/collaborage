@@ -1,0 +1,95 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.nablarch.example</groupId>
+  <artifactId>nablarch-example-web</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+
+  <profiles>
+    <profile>
+      <id>development</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <env.classifier>dev</env.classifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>h2</id>
+      <properties>
+        <env.classifier>h2</env.classifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>prod</id>
+      <properties>
+        <env.classifier>production</env.classifier>
+      </properties>
+    </profile>
+  </profiles>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.googlecode.maven-download-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>1.3.0</version>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>artifact</goal>
+            </goals>
+            <configuration>
+              <groupId>${project.groupId}</groupId>
+              <artifactId>${project.artifactId}</artifactId>
+              <version>${project.version}</version>
+              <type>war</type>
+              <classifier>${env.classifier}</classifier>
+              <overWrite>true</overWrite>
+              <outputDirectory>./</outputDirectory>
+              <outputFileName>app.war</outputFileName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <repositories>
+    <repository>
+      <id>private-release</id>
+      <url>http://repository.tools.dev.paycierge.com:8081/repository/maven-releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>private-snapshot</id>
+      <url>http://repository.tools.dev.paycierge.com:8081/repository/maven-snapshots/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+  <pluginRepositories>
+    <pluginRepository>
+      <id>private-plugin-release</id>
+      <url>http://repository.tools.dev.paycierge.com:8081/repository/maven-central/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+    <pluginRepository>
+      <id>private-plugin-snapshot</id>
+      <url>http://repository.tools.dev.paycierge.com:8081/repository/maven-central/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
+
+</project>

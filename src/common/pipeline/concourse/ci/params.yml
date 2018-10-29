@@ -1,0 +1,17 @@
+# - 修正内容
+#   - <と>で囲まれた部分を指定します。
+
+git-project-url: http://proxy/gitlab/sample/nablarch-example-web.git
+
+docker-repo-host-port: nexus.repository:18444
+docker-repo-username: <Nexusのユーザ名>
+docker-repo-password: <Nexusのパスワード>
+
+sonar-url: <SonarQubeへのURL>
+
+chat-webhook-url: <Rocket.ChatのWebHooKへのURL>
+
+demo-host: <Demoサーバのホスト>
+demo-port: <DemoサーバのSSHのポート番号>
+demo-username: <DemoサーバのSSHのユーザ名>
+demo-password: <DemoサーバのSSHのパスワード>

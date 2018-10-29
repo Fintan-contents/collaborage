@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+
+  <servers>
+    <server>
+      <id>private-release</id>
+      <username>Nexusのユーザ名</username>
+      <password>Nexusのパスワード</password>
+    </server>
+    <server>
+      <id>private-snapshot</id>
+      <username>Nexusのユーザ名</username>
+      <password>Nexusのユーザ名</password>
+    </server>
+  </servers>
+
+  <mirrors>
+    <mirror>
+      <id>private-repository</id>
+      <mirrorOf>*</mirrorOf>
+      <url>http://proxy/nexus/repository/maven-public/</url>
+    </mirror>
+  </mirrors>
+
+</settings>

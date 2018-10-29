@@ -1,0 +1,125 @@
+version: '3'
+
+services:
+
+  proxy:
+    container_name: proxy
+    image: httpd:2.2.34-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      no_proxy: redmine,rocketchat,sonarqube
+    ports:
+      - "80:80"
+    volumes:
+      - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
+    depends_on:
+      - redmine
+      - rocketchat
+      - sonarqube
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  redmine:
+    container_name: redmine
+    image: redmine:3.3.4-passenger
+    restart: always
+    env_file: ./common.env
+    environment:
+      REDMINE_DB_POSTGRES: redmine-db
+      REDMINE_DB_USERNAME: redmine
+      REDMINE_DB_PASSWORD: redmine
+      REDMINE_RELATIVE_URL_ROOT: /redmine
+    volumes:
+      - /data/redmine-files:/usr/src/redmine/files
+      - /data/redmine-plugins:/usr/src/redmine/plugins
+    depends_on:
+      - redmine-db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  redmine-db:
+    container_name: redmine-db
+    image: postgres:9.5.7-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      POSTGRES_USER: redmine
+      POSTGRES_PASSWORD: redmine
+    volumes:
+      - /data/redmine-db:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  rocketchat:
+    container_name: rocketchat
+    image: rocket.chat:0.57.3
+    restart: always
+    env_file: ./common.env
+    environment:
+      MONGO_URL: mongodb://rocketchat-db:27017/rocketchat
+      ROOT_URL: http://localhost/rocketchat
+    volumes:
+      - /data/rocketchat:/app/uploads
+    depends_on:
+      - rocketchat-db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  rocketchat-db:
+    container_name: rocketchat-db
+    image: mongo:3.2.15
+    restart: always
+    env_file: ./common.env
+    command: mongod --smallfiles
+    volumes:
+      - /data/rocketchat-db:/data/db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  sonarqube:
+    container_name: sonarqube
+    image: sonarqube:6.7.4-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      SONARQUBE_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONARQUBE_JDBC_USERNAME: sonar
+      SONARQUBE_JDBC_PASSWORD: sonar
+    volumes:
+      - ./sonar.properties:/opt/sonarqube/conf/sonar.properties
+      - /data/sonarqube/data:/opt/sonarqube/data
+      - /data/sonarqube/extensions:/opt/sonarqube/extensions
+      - /data/sonarqube/bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+    depends_on:
+      - sonarqube-db
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  sonarqube-db:
+    container_name: sonarqube-db
+    image: postgres:9.5.7-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - /data/sonarqube-db:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"

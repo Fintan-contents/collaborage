@@ -1,0 +1,179 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: ((docker-repo-host-port))/cfcommunity/slack-notification-resource
+    insecure_registries:
+      - ((docker-repo-host-port))
+    username: ((docker-repo-username))
+    password: ((docker-repo-password))
+
+- name: git-multibranch
+  type: docker-image
+  source:
+    repository: ((docker-repo-host-port))/cfcommunity/git-multibranch-resource
+    insecure_registries:
+      - ((docker-repo-host-port))
+    username: ((docker-repo-username))
+    password: ((docker-repo-password))
+
+resources:
+- name: feature
+  type: git-multibranch
+  source:
+    uri: ((git-project-url))
+    branches: feature.*
+
+- name: develop
+  type: git-multibranch
+  source:
+    uri: ((git-project-url))
+    branches: develop
+
+- name: mvn
+  type: docker-image
+  source:
+    repository: ((docker-repo-host-port))/library/maven
+    insecure_registries:
+      - ((docker-repo-host-port))
+    username: ((docker-repo-username))
+    password: ((docker-repo-password))
+
+- name: m2
+  type: docker-image
+  source:
+    repository: ((docker-repo-host-port))/kiyohome/nablarch-in-mvn
+    tag: 5u10-1
+    insecure_registries:
+      - ((docker-repo-host-port))
+    username: ((docker-repo-username))
+    password: ((docker-repo-password))
+
+- name: ssh
+  type: docker-image
+  source:
+    repository: ((docker-repo-host-port))/kiyohome/ssh
+    tag: 0.1.0
+    insecure_registries:
+      - ((docker-repo-host-port))
+    username: ((docker-repo-username))
+    password: ((docker-repo-password))
+
+- name: chat
+  type: slack-notification
+  source:
+    url: ((chat-webhook-url))
+
+jobs:
+- name: unit-test-feature
+  plan:
+  - aggregate:
+    - get: source
+      resource: feature
+      trigger: true
+    - get: mvn
+    - get: m2
+  - task: mvn-test
+    image: mvn
+    file: source/ci/tasks/mvn-test.yml
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: code-analysis-feature
+  plan:
+  - aggregate:
+    - get: source
+      resource: feature
+      trigger: true
+      passed:
+      - unit-test-feature
+    - get: mvn
+    - get: m2
+  - task: mvn-sonar
+    image: mvn
+    file: source/ci/tasks/mvn-sonar.yml
+    params:
+      SONAR_URL: ((sonar-url))
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: unit-test-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+    - get: mvn
+    - get: m2
+  - task: mvn-test
+    image: mvn
+    file: source/ci/tasks/mvn-test.yml
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: code-analysis-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+      passed:
+      - unit-test-develop
+    - get: mvn
+    - get: m2
+  - task: mvn-sonar
+    image: mvn
+    file: source/ci/tasks/mvn-sonar.yml
+    params:
+      SONAR_URL: ((sonar-url))
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: deploy-to-demo-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+      passed:
+      - code-analysis-develop
+    - get: mvn
+    - get: m2
+    - get: ssh
+  - task: mvn-jar
+    image: mvn
+    file: source/ci/tasks/mvn-jar.yml
+  - task: deploy-to-demo
+    image: ssh
+    file: source/ci/tasks/deploy-to-demo.yml
+    params:
+      DEMO_HOST: ((demo-host))
+      DEMO_PORT: ((demo-port))
+      DEMO_USERNAME: ((demo-username))
+      DEMO_PASSWORD: ((demo-password))
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+notify_success: &notify_success
+  put: chat
+  params:
+    channel: "#concourse"
+    text: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME: $ATC_EXTERNAL_URL/builds/$BUILD_ID"
+    icon_emoji: ":blush:"
+
+notify_failure: &notify_failure
+  put: chat
+  params:
+    channel: "#concourse"
+    text: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME: $ATC_EXTERNAL_URL/builds/$BUILD_ID"
+    icon_emoji: ":sob:"

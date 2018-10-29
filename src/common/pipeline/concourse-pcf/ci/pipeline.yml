@@ -1,0 +1,147 @@
+resource_types:
+- name: slack-notification
+  type: docker-image
+  source:
+    repository: repository.tools.dev.paycierge.com:18443/kiyohome/slack-notification-resource
+    tag: 0.1.0
+    insecure_registries:
+      - repository.tools.dev.paycierge.com:18443
+    username: {{docker-repo-username}}
+    password: {{docker-repo-password}}
+
+resources:
+- name: develop
+  type: git
+  source:
+    uri: {{git-project-url}}
+    username: {{git-username}}
+    password: {{git-password}}
+    branch: develop
+
+- name: mvn
+  type: docker-image
+  source:
+    repository: repository.tools.dev.paycierge.com:18443/library/maven
+    insecure_registries:
+      - repository.tools.dev.paycierge.com:18443
+    username: {{docker-repo-username}}
+    password: {{docker-repo-password}}
+
+- name: m2
+  type: docker-image
+  source:
+    repository: repository.tools.dev.paycierge.com:18443/kiyohome/nablarch-in-mvn
+    tag: 5u10-1
+    insecure_registries:
+      - repository.tools.dev.paycierge.com:18443
+    username: {{docker-repo-username}}
+    password: {{docker-repo-password}}
+
+- name: cf-develop
+  type: cf
+  source:
+    api: {{cf-api}}
+    username: {{cf-username}}
+    password: {{cf-password}}
+    organization: {{cf-org}}
+    space: development
+    skip_cert_check: true
+
+- name: chat
+  type: slack-notification
+  source:
+    url: {{chat-webhook-url}}
+
+jobs:
+- name: unit-test-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+    - get: mvn
+    - get: m2
+  - task: mvn-test
+    image: mvn
+    file: source/ci/tasks/mvn-test.yml
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: code-analysis-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+      passed:
+      - unit-test-develop
+    - get: mvn
+    - get: m2
+  - task: mvn-sonar
+    image: mvn
+    file: source/ci/tasks/mvn-sonar.yml
+    params:
+      SONAR_URL: {{sonar-url}}
+      SONAR_BRANCH: develop
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: deploy-to-mvn-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+      passed:
+      - code-analysis-develop
+    - get: mvn
+    - get: m2
+  - task: mvn-deploy
+    image: mvn
+    file: source/ci/tasks/mvn-deploy.yml
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+- name: deploy-to-cf-develop
+  plan:
+  - aggregate:
+    - get: source
+      resource: develop
+      trigger: true
+      passed:
+      - deploy-to-mvn-develop
+    - get: mvn
+    - get: m2
+  - task: mvn-download
+    image: mvn
+    file: source/ci/tasks/mvn-download.yml
+  - put: cf-develop
+    params:
+      manifest: source/ci/manifest-develop.yml
+      path: dest/app.war
+  on_success:
+    <<: *notify_success
+  on_failure:
+    <<: *notify_failure
+
+notify_success: &notify_success
+  put: chat
+  params:
+    channel: "#concourse"
+    text: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME: $ATC_EXTERNAL_URL/builds/$BUILD_ID"
+    icon_emoji: ":blush:"
+    curl_option: "-x 10.100.10.60:80"
+
+notify_failure: &notify_failure
+  put: chat
+  params:
+    channel: "#concourse"
+    text: "$BUILD_PIPELINE_NAME/$BUILD_JOB_NAME: $ATC_EXTERNAL_URL/builds/$BUILD_ID"
+    icon_emoji: ":sob:"
+    curl_option: "-x 10.100.10.60:80"

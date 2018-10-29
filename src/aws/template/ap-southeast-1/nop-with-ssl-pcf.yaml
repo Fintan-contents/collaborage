@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Collaborage with ssl
+
+Parameters:
+
+  SourceIp:
+    # 開発環境へのアクセス元となるソースIPのCIDRを指定します。
+    Description: Specify the CIDR of the source IP from which the development environment is accessed.
+    Type: String
+
+  Vpc:
+    # VPCを選択します。
+    Description: Select VPC
+    Type: AWS::EC2::VPC::Id
+
+  PublicSubnets:
+    # パブリックサブネットを選びます。ALBを使用するため、パブリックサブネットを2つ選んでください。
+    Description: Select PublicSubnets. In order to use ALB, please select two public subnets
+    Type: List<AWS::EC2::Subnet::Id>
+
+  PrivateSubnet:
+    # プライベートサブネットを選びます。
+    Description: Select PrivateSubnet
+    Type: AWS::EC2::Subnet::Id
+
+  SslCertificate:
+    # SSL証明書のarnを指定します。
+    Description: Specify the arn of the SSL certificate
+    Type: String
+
+  Ec2Role:
+    # EC2に割り当てるロールの名前を指定します。
+    Description: Specify the name of the role to be assigned to EC2
+    Type: String
+
+  Ec2KeyPair:
+    # EC2に割り当てるキーペアを選びます。
+    Description: Select the key pair to be assigned to EC2
+    Type: AWS::EC2::KeyPair::KeyName
+
+  Ec2TypeForCq:
+    # Communication/Qualityインスタンスのインスタンスタイプを指定します。
+    Description: Specify the instance type for the Communication / Quality instance
+    Type: String
+    Default: m4.large
+
+  BastionSecurityGroup:
+    # 踏み台インスタンスのセキュリティグループを選びます。
+    Description: Select the security group of the bastion instance
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+
+  # SecurityGroup
+  SgAlb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: nop-sg-alb
+      GroupDescription: sg for alb on nop
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: nop-sg-alb
+
+  SgEc2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: nop-sg-ec2
+      GroupDescription: sg for ec2 on nop
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: nop-sg-ec2
+
+  SgAlbInboundHttpsFromInternet:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SgAlb
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref SourceIp
+
+  SgEc2InboundHttpFromAlb:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SgEc2
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref SgAlb
+
+  SgEc2InboundHttpFromEc2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SgEc2
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      SourceSecurityGroupId: !Ref SgEc2
+
+  SgEc2InboundSshFromBastion:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SgEc2
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref BastionSecurityGroup
+
+  SgEc2InboundSshFromEc2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SgEc2
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref SgEc2
+
+  SgAlbOutboundAll:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref SgAlb
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+  SgEc2OutboundAll:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref SgEc2
+      IpProtocol: -1
+      CidrIp: 0.0.0.0/0
+
+  # Communication/Quality server
+  AlbCq:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: nop-alb-cq
+      Scheme: internet-facing
+      Subnets: !Ref PublicSubnets
+      SecurityGroups:
+        - !Ref SgAlb
+
+  AlbListenerCq:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TgCq
+      LoadBalancerArn: !Ref AlbCq
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref SslCertificate
+
+  TgCq:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: nop-tg-cq
+      VpcId: !Ref Vpc
+      Port: 80
+      Protocol: HTTP
+      Targets:
+        - Id: !Ref Ec2Cq
+          Port: 80
+
+  Ec2Cq:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref Ec2Role
+      ImageId: ami-09d51cbb9a9be1b54
+      InstanceType: !Ref Ec2TypeForCq
+      KeyName: !Ref Ec2KeyPair
+      SubnetId: !Ref PrivateSubnet
+      SecurityGroupIds:
+        - !Ref SgEc2
+      Tags:
+        - Key: Name
+          Value: nop-ec2-cq

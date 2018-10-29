@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+
+  <servers>
+    <server>
+      <id>private-release</id>
+      <username>admin</username>
+      <password>admin123</password>
+    </server>
+    <server>
+      <id>private-snapshot</id>
+      <username>admin</username>
+      <password>admin123</password>
+    </server>
+  </servers>
+
+  <mirrors>
+    <mirror>
+      <id>private-repository</id>
+      <mirrorOf>*</mirrorOf>
+      <url>http://repository.tools.dev.paycierge.com:8081/repository/nablarch-group</url>
+    </mirror>
+  </mirrors>
+
+</settings>

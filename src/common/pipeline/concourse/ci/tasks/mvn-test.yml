@@ -1,0 +1,8 @@
+platform: linux
+inputs:
+- name: source
+- name: m2
+run:
+  path: bash
+  args:
+  - source/ci/tasks/mvn-test.sh

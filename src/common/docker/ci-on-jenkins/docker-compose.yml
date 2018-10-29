@@ -1,0 +1,97 @@
+version: '3'
+
+services:
+
+  proxy:
+    container_name: proxy
+    image: httpd:2.2.34-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      no_proxy: jenkins,gitbucket,nexus.repository
+    ports:
+      - "80:80"
+    volumes:
+      - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
+    depends_on:
+      - jenkins
+      - gitbucket
+      - nexus.repository
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  jenkins:
+    container_name: jenkins
+    image: kiyohome/jenkins-with-sshpass:lts
+    restart: always
+    privileged: true
+    env_file: ./common.env
+    environment:
+      JENKINS_OPTS: --prefix=/jenkins
+      # RocketChat Notifierプラグインがno_proxyに対応していなためhttp_proxy/https_proxyを空に上書きします。
+      http_proxy: ""
+      https_proxy: ""
+      no_proxy: proxy,nexus.repository
+    volumes:
+      - /data/jenkins:/var/jenkins_home
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  gitbucket:
+    container_name: gitbucket
+    image: f99aq8ove/gitbucket:alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      GITBUCKET_OPTS: --prefix=/gitbucket
+      GITBUCKET_DB_URL: jdbc:postgresql://gitbucket-db/gitbucket
+      GITBUCKET_DB_USER: gitbucket
+      GITBUCKET_DB_PASSWORD: gitbucket
+      no_proxy: proxy
+    volumes:
+      - ./wait-for:/gitbucket/wait-for
+      - /data/gitbucket/repositories:/gitbucket/repositories
+      - /data/gitbucket/data:/gitbucket/data
+    depends_on:
+      - gitbucket-db
+    command: sh -c '/gitbucket/wait-for gitbucket-db:5432 -- /opt/gitbucket.sh'
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  gitbucket-db:
+    container_name: gitbucket-db
+    image: postgres:9.5.7-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      POSTGRES_USER: gitbucket
+      POSTGRES_PASSWORD: gitbucket
+    volumes:
+      - /data/gitbucket-db:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  nexus.repository:
+    container_name: nexus.repository
+    image: kiyohome/nexus-with-ssl:3.3.2
+    restart: always
+    env_file: ./common.env
+    environment:
+      NEXUS_CONTEXT: nexus
+    ports:
+      - "18081:18081"
+      - "18443:18443"
+    volumes:
+      - /data/nexus:/nexus-data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
