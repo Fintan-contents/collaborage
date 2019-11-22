@@ -24,7 +24,7 @@ AWS
   - Demoサーバ
 - CQ/CIサーバのEC2はm4.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
 - Demoサーバはt2.small、ルートボリューム20GBでデフォルト提供します。
-- Concourse/GitLabを使う場合は、Concourse/GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
+- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
 - **上記のマシンスペックは推奨する最低限のスペックになります。PJの規模に合わせて変更してください。**
 
 
@@ -113,7 +113,7 @@ AWS
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-0.1.6
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.1.6
-  - CIサーバ(GitLab/Concourse)： nop-dev-ci-concourse-0.1.6
+  - CIサーバ(GitLab)： nop-dev-ci-concourse-0.1.6
   - Demoサーバ： nop-inst-demo-0.1.4
 
 ### 作業PC
@@ -148,15 +148,15 @@ AWS
   $ git clone https://github.com/Fintan-contents/collaborage.git
   $ cd collaborage
   ```
-- 作業場所を作成します。作業場所のディレクトリ、CIツール(GitBucket/Jenkins or GitLab/Concourse)を決めてください。特に希望がなければ、情報が多く、リソース消費が少ない(つまり低コスト)、Jenkinsを使ってください。
+- 作業場所を作成します。作業場所のディレクトリ、CIツール(GitBucket/Jenkins or GitLab)を決めてください。特に希望がなければ、情報が多く、リソース消費が少ない(つまり低コスト)、Jenkinsを使い、コードレビューをGitリポジトリ上で行いたい場合はGitLabを使うと指摘の管理が楽になります。
   - ユーザのnopディレクトリにJenkinsで作る場合
     ```
     $ ./init-workplace.sh ~/nop aws jenkins
     $ cd ~/nop
     ```
-  - ユーザのnopディレクトリにConcourseで作る場合
+  - ユーザのnopディレクトリにGitLabで作る場合
     ```
-    $ ./init-workplace.sh ~/nop aws concourse
+    $ ./init-workplace.sh ~/nop aws gitlab
     $ cd ~/nop
     ```
 
@@ -171,7 +171,7 @@ AWS
     ```
     nop/template/nop-with-ssl-jenkins.yaml
     ```
-  - Concourseを使う場合
+  - GitLabを使う場合
     ```
     nop/template/nop-with-ssl-concourse.yaml
     ```
@@ -194,7 +194,7 @@ AWS
         - ![IAMのロール](images/aws-iam-role.png)
     - Ec2TypeForCi
       - CIサーバのインスタンスタイプを指定します。
-      - Jenkinsを使う場合は「m4.large」、Concourseを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
+      - Jenkinsを使う場合は「m4.large」、GitLabを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
     - Ec2TypeForCq
       - Communication/Qualityサーバのインスタンスタイプを指定します。
       - 「m4.large」ぐらいあれば大丈夫だと思います。
