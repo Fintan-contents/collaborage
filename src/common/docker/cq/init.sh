@@ -15,6 +15,9 @@ sed -i -e "s/env-http-proxy-port-here/${HTTP_PROXY_PORT}/" ./sonar.properties
 
 echo "## docker-compose up on ${NOP_APP_ID}"
 
+./init-data.sh
+
+
 docker-compose up -d
 sleep 30s
 
