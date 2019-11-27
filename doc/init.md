@@ -8,6 +8,7 @@
 - [Rocket.Chat](#rocketchat)
 - [SonarQube](#sonarqube)
 - [Nexus](#nexus)
+- [Subversion](#subversion)
 - [GitBucket](#gitbucket)
 - [Jenkins](#jenkins)
 - [GitLab](#gitlab)
@@ -132,6 +133,22 @@
     - GitLabを使用する場合は、「Search」エリアに「gitlab」と入力して検索し、「GitLab」の「Install」を選択します。
     - 再起動を促すメッセージが表示されるので、「Restart」を選択します。
     - 再起動後、「Installed」を選択すると、インストールされたプラグインを確認できます。
+
+
+## Subversion
+
+
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- ユーザを作成します。
+  - ID: root
+  - パスワード: pass123-
+  ```
+    $ docker exec -t subversion-server htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd root pass123-
+  ```
+
 
 
 ## Nexus

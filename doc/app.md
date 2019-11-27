@@ -26,6 +26,19 @@
     - AWSマネジメントコンソールでSNSにアクセスし、トピックのARNを確認します。
       - ![SNSのトピックARN](images/aws-sns-topicarn.png)
 - docker-composeの定義を変更します。アプリで画面から設定できないため、事前に定義ファイルに指定します。
+  - Rocket.Chatの外部URLを指定します。
+    ```
+    nop/docker/cq/docker-compose.yml
+    ```
+    - 「rocketchat」＞「environment」＞「ROOT_URL」に指定します。
+      ```
+      rocketchat:
+        container_name: rocketchat
+        # 省略
+        environment:
+          # 省略
+          ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
+      ```
   - Concourseを使用する場合は、Concourseの外部URLとログインに使用するユーザ名/パスワードを指定します。
     ```
     nop/docker/ci/docker-compose.yml

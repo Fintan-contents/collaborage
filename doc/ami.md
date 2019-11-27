@@ -117,6 +117,23 @@ home
   ```
   $ sudo yum -y update
   ```
+- Rocket.Chatの設定を変更します。
+  ```
+  $ vi nop/docker/cq/docker-compose.yml
+  ```
+  - Rocket.Chatの外部URLを指定します。
+    ```
+    nop/docker/cq/docker-compose.yml
+    ```
+    - 「rocketchat」＞「environment」＞「ROOT_URL」に指定します。
+      ```
+      rocketchat:
+        container_name: rocketchat
+        # 省略
+        environment:
+          # 省略
+          ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
+      ```
 - プロキシ環境下の場合は、Dockerコンテナのプロキシの設定を変更します。
   ```
   $ vi nop/docker/cq/common.env
