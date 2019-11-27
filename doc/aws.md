@@ -24,7 +24,7 @@ AWS
   - Demoサーバ
 - CQ/CIサーバのEC2はm4.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
 - Demoサーバはt2.small、ルートボリューム20GBでデフォルト提供します。
-- Concourse/GitLabを使う場合は、Concourse/GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
+- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
 - **上記のマシンスペックは推奨する最低限のスペックになります。PJの規模に合わせて変更してください。**
 
 
@@ -41,25 +41,19 @@ AWS
 - CQ/CIサーバのアプリデータのみバックアップを取得します。（CIにより復元できるためDemoサーバのアプリデータは取得しません）
 - EBSのスナップショットをバックアップとします。
 - CQ/CIサーバの/dataをEBSにマウントし、アプリのデータを/data/<アプリ名\>に格納します。
-- CQ/CIサーバのcronでシェルスクリプトを定期実行し、EBSのスナップショットを取得します。
-- デフォルトは1日1回（JST 23時0分）取得します。
-- シェルスクリプトの処理は「アプリ停止」＞「スナップショット取得」＞「古いスナップショット削除」＞「アプリ開始」の順に処理します。
-  - アプリ停止
-    - 「docker-compose stop」でアプリを停止します。
+- Amazon DLMを定期実行し、EBSのスナップショットを取得します。
   - スナップショット取得
-    - AWS CLIを使ってスナップショットを取得します。
+    - Amazon DLMにて取得します。
     - **スナップショットの取得対象は、Nameタグに「nop-ebs-data-(cq|ci)」が設定されているEBSとなります。**
     - 作成したスナップショットには、以下のタグを設定します。
       - Nameタグ: nop-ebs-data-(cq|ci)-snapshot
       - NopPurgeAfterタグ: スナップショットが有効な日付（この日付以降に削除されます）
   - 古いスナップショット削除
-    - AWS CLIを使ってスナップショットを削除します。
+    - AWS CLIを使ってスナップショットします。
     - スナップショットの取得対象は、Nameタグに「nop-ebs-data-(cq|ci)-snapshot」が設定されているEBSとなります。
     - NopPurgeAfterタグの日付＜現在の日付となった場合に対象のスナップショットを削除します。
   - どこかの処理で失敗すると、AWS CLIを使ってSNSのトピックにメッセージを発行します。
     - SNSのトピックにサブスクリプションとしてemailを設定しておくことで、メール通知を実現します。
-- デフォルトで7日前のスナップショットまで残します。
-
 
 ### 監視
 
@@ -113,7 +107,7 @@ AWS
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-0.1.6
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.1.6
-  - CIサーバ(GitLab/Concourse)： nop-dev-ci-concourse-0.1.6
+  - CIサーバ(GitLab)： nop-dev-ci-concourse-0.1.6
   - Demoサーバ： nop-inst-demo-0.1.4
 
 ### 作業PC
@@ -148,15 +142,15 @@ AWS
   $ git clone https://github.com/Fintan-contents/collaborage.git
   $ cd collaborage
   ```
-- 作業場所を作成します。作業場所のディレクトリ、CIツール(GitBucket/Jenkins or GitLab/Concourse)を決めてください。特に希望がなければ、情報が多く、リソース消費が少ない(つまり低コスト)、Jenkinsを使ってください。
+- 作業場所を作成します。作業場所のディレクトリ、CIツール(GitBucket/Jenkins or GitLab)を決めてください。特に希望がなければ、情報が多く、リソース消費が少ない(つまり低コスト)、Jenkinsを使い、コードレビューをGitリポジトリ上で行いたい場合はGitLabを使うと指摘の管理が楽になります。
   - ユーザのnopディレクトリにJenkinsで作る場合
     ```
     $ ./init-workplace.sh ~/nop aws jenkins
     $ cd ~/nop
     ```
-  - ユーザのnopディレクトリにConcourseで作る場合
+  - ユーザのnopディレクトリにGitLabで作る場合
     ```
-    $ ./init-workplace.sh ~/nop aws concourse
+    $ ./init-workplace.sh ~/nop aws gitlab
     $ cd ~/nop
     ```
 
@@ -171,7 +165,7 @@ AWS
     ```
     nop/template/nop-with-ssl-jenkins.yaml
     ```
-  - Concourseを使う場合
+  - GitLabを使う場合
     ```
     nop/template/nop-with-ssl-concourse.yaml
     ```
@@ -194,7 +188,7 @@ AWS
         - ![IAMのロール](images/aws-iam-role.png)
     - Ec2TypeForCi
       - CIサーバのインスタンスタイプを指定します。
-      - Jenkinsを使う場合は「m4.large」、Concourseを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
+      - Jenkinsを使う場合は「m4.large」、GitLabを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
     - Ec2TypeForCq
       - Communication/Qualityサーバのインスタンスタイプを指定します。
       - 「m4.large」ぐらいあれば大丈夫だと思います。
