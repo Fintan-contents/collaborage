@@ -20,7 +20,7 @@
   - [GitLabでのリポジトリ追加](#gitlabでのリポジトリ追加)
 - CIを追加します
   - [JenkinsでのCI追加](#jenkinsでのci追加)
-  - [ConcourseでのCI追加](#concourseでのci追加)
+  - [GitLabでのCI追加](#gitlabでのci追加)
 
 ## グループを追加します
 
@@ -89,7 +89,7 @@
 #### 開発メンバ
 
 - 管理者が作成したユーザでログインします。
-- チャンネル「#jenkins」「#concourse」に参加します。
+- チャンネル「#jenkins」「#gitlab」に参加します。
   - 画面左の「その他のチャンネル...」を選択し、チャンネルを選択します。
     - 画面一番下の「参加」を選択します。
 
@@ -126,11 +126,11 @@
     - Password/Password confirmationを指定します。
 - Save changesします。
 - グループに追加します。
-  - 画面左上の「ハンバーガーメニュー」(三本線)＞「Groups」＞「sample as Owner」＞「Members」タブを選択します。
-    - Add new member to sample: 作成したユーザ
-    - role permissions: Guest->Master
-      - 開発ユーザはDeveloperでよいのですが、初回のmasterリポジトリへのpushを行うにはMasterの必要があります。
-    - Add to groupします。
+  - 画面左上の「レンチ」(Admin area)アイコン＞「Overview」タブ＞「Groups」＞「sample」＞を選択します。
+    - Add user(s) to the group の上段のテキストボックス: 作成したユーザ
+    - Add user(s) to the group の下段のテキストボックス:: Guest->Maintainer
+      - 開発ユーザはDeveloperでよいのですが、初回のmasterリポジトリへのpushを行うにはMaintainerの必要があります。
+    - Add users to groupします。
 
 #### 開発メンバ
 
@@ -323,45 +323,68 @@
       - ログインID: 10000001
       - パスワード: pass123-
 
-
-### ConcourseでのCI追加
+### GitLabでのCI追加
 
 
 #### 管理者
 
+- ビルド結果の通知設定を行います。
+  - 管理者でログインします。
+  - 画面左上の「Gitlab」(アイコン)＞「sample/nablarch-example-web」を選択します
+  - 「Setting」＞「Integrations」を選択します
+    - URL: Rocket.ChatのWebhook URLのプロトコルをHTTPに、ホスト名をCQサーバのURLにしたもの。以下に例を示します。
+      ```
+      http://10.0.1.75/rocketchat/hooks/Pf9RdMSfer4xWGNvb/emn2DcnHcGyyzct9fiu8FWY6JWyxo4BQG6MCZo4xr6rKHjNP
+      ```
+    - Pipeline events: ON
+
 - パイプラインを準備します。
   - 作業場所でパイプラインをnablarch-example-webにコピーします。
-    ```
-    $ cp -r pipeline/concourse/* <nablarch-example-webへのパス>
-    ```
+    - Java 8でビルドする場合
+      ```
+      $ cp -r pipeline/gitlab/java8/* <nablarch-example-webへのパス>
+      ```
+    - Java 11でビルドする場合
+      ```
+      $ cp -r pipeline/gitlab/java11/* <nablarch-example-webへのパス>
+      ```
   - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
   - パイプラインのパラメータを変更します。
     ```
-    nablarch-example-web/ci/params.yml
+    nablarch-example-web/.gitlab-ci.yml
     ```
+    - 環境変数を修正します。
+      ```
+      variables:
+        SONAR_HOST_URL: <SonarQubeのURL>
+        DEMO_HOST: <Demoサーバのホスト>
+        DEMO_PORT: <DemoサーバのSSHのポート番号>
+        DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
+        DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+      ```
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
-    - パラメータの設定は以下のような感じになります。
+    - こんな感じになります。
       ```
-      git-project-url: http://proxy/gitlab/sample/nablarch-example-web.git
-
-      docker-repo-host-port: nexus.repository:18444
-      docker-repo-username: admin
-      docker-repo-password: pass123-
-      
-      sonar-url: http://10.0.1.217/sonarqube
-      
-      chat-webhook-url: http://10.0.1.217/rocketchat/hooks/KMFduPo2KDqRLsAwp/RkL...
-      
-      demo-host: 10.0.1.121
-      demo-port: 22
-      demo-username: centos
-      demo-password: pass789-
+      variables:
+        SONAR_HOST_URL: 10.0.1.75
+        DEMO_HOST: 10.0.1.164
+        DEMO_PORT: 22
+        DEMO_USERNAME: centos
+        DEMO_PASSWORD: pass789-
       ```
-  - パイプラインで使うMavenの設定を変更します。
+  - パイプラインのパラメータを変更します。
     ```
     nablarch-example-web/ci/settings.xml
     ```
-    - Nexusのユーザ名/パスワードだけを変更します。
+    - MavenリポジトリのURLを修正します。
+      ```
+      <url>http://<CIサーバ>/nexus/repository/maven-public/</url>
+      ```
+    - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
+    - こんな感じになります。
+      ```
+      <url>http://10.0.1.9/nexus/repository/maven-public/</url>
+      ```
   - Executable Jarでデプロイするため、waitt-maven-pluginの設定を変更します。
     ```
     nablarch-example-web/pom.xml
@@ -383,68 +406,10 @@
         </configuration>
       </plugin>
       ```
-  - Mavenリポジトリにデプロイするため、distributionManagementの設定を追加します。
-    ```
-    nablarch-example-web/pom.xml
-    ```
-    - distributionManagementを追加します。このままコピペします。
-      ```
-      <distributionManagement>
-        <repository>
-          <id>private-release</id>
-          <url>http://proxy/nexus/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-          <id>private-snapshot</id>
-          <url>http://proxy/nexus/repository/maven-snapshots/</url>
-        </snapshotRepository>
-      </distributionManagement>
-      ```
-    - 一番外側のprojectタグの閉じタグの直前に入れておけば大丈夫です。
+  - Java11でビルドする場合は以下を参考に、pom.xmlとunit-test.xmlを修正します。  
+    https://nablarch.github.io/docs/LATEST/doc/application_framework/application_framework/blank_project/setup_blankProject/setup_Java11.html
   - pushします。
-- Concouseにパイプラインを設定します。
-  - Concourseへのパイプライン設定はflyコマンドで行います。
-  - Concourseにアクセスしてツールをダウンロードします。
-    - インストールしたConcourseのトップページにアクセスします。
-    - 作業マシンのOSと同じアイコン(画面中央にあります)を選択して、ツールをダウンロードします。
-    - ツールにパスを通すか、nablarch-example-web/ciに置いて直接実行して使います。
-  - flyコマンドでConcouseにログインします。パスを通してない場合は「fly」→「fly.exe」で実行してください。
-    ```
-    $ cd <nablarch-example-web/ciへのパス>
-    $ fly -t main login -c <ConcourseのURL> -k
-    ```
-    - ConcourseのURLはブラウザでアクセスする場合と同じものを指定します。
-    - username/passwordが聞かれるので、docker-composeの定義ファイルに指定したものを入力します。
-      - 「target saved」と表示されればログイン成功です。
-      - こんな感じになります。
-        ```
-        $ fly -t main login -c https://nop-ci.adc-tis.com/ -k
-        logging in to team 'main'
-        
-        username: admin
-        admin
-        password: pass123-
-        
-        target saved
-        ```
-  - flyコマンドでパイプラインを設定します。
-    ```
-    $ fly -t main sp -p nablarch-example-web -c pipeline.yml -l params.yml
-    ```
-    - 「apply configuration? [yN]:」と聞かれるので「y」と答えます。
-    - パイプラインを変更した場合はこのコマンドで更新します。
-  - ブラウザでConcourseにアクセスしてCIを実行します。
-    - Concourseがパイプラインを検知して、画面にパイプラインが表示されます。
-    - 表示されない場合は画面を更新してください。
-    - はじめは一時停止状態なので、画面左上の「メニュー」＞nablarch-example-webの「再生」アイコンを選択します。
-      - ![ConcourseのUnpause](images/concourse-unpause.png)
-  - 初回は大量の依存モジュールを落としてくるため、少し時間（5分～10分ぐらい）がかかります。
-  - 「deploy-to-demo-develop」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
-    ```
-    <DEMOサーバのホスト>/
-    ```
-    - ログインID: 10000001
-    - パスワード: pass123-
+  - GitLabが変更を検知し、ビルドが実行されます。
 
 これで開発準備は終わりです！
 お疲れさまでしたー

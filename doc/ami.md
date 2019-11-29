@@ -26,7 +26,7 @@ AMIは、次の手順で作成し、[Nablarch](https://github.com/nablarch/nabla
 各アプリでは、管理者、グループ、ユーザ、プロジェクト/リポジトリを次の内容で作成しています。
 
 - 管理者
-  - admin/pass123-（Redmine、Rocket.Chat、SonarQube、Nexus、Jenkins、Concourse）
+  - admin/pass123-（Redmine、Rocket.Chat、SonarQube、Nexus、Jenkins）
   - root/pass123-（GitBucket、GitLab）
 - グループ
   - sample（Redmine、GitBucket、GitLab）
@@ -268,45 +268,10 @@ home
     http_proxy=http://26.247.64.251:3128
     https_proxy=http://26.247.64.251:3128
     ```
-- Concourse/GitLabを使う場合はアプリの設定を変更します。
+- GitLabを使う場合はアプリの設定を変更します。
   ```
   $ vi nop/docker/ci/docker-compose.yml
   ```
-  - Concourseを使用する場合は、Concourseの外部URLとログインに使用するユーザ名/パスワードを指定します。
-    ```
-    nop/docker/ci/docker-compose.yml
-    ```
-    - 「concourse-web」＞「environment」＞「CONCOURSE_XXXXXXXX」に指定します。
-      ```
-      concourse-web:
-        container_name: concourse-web
-        # 省略
-        environment:
-          # 省略
-          CONCOURSE_EXTERNAL_URL: <ブラウザからConcourseにアクセスする場合のURL>
-          CONCOURSE_BASIC_AUTH_USERNAME: <ユーザ名>
-          CONCOURSE_BASIC_AUTH_PASSWORD: <パスワード>
-          CONCOURSE_NO_REALLY_I_DONT_WANT_ANY_AUTH:
-      ```
-    - ConcourseのURLは「<ホスト>/」となります。Concourseはベースパスに対応していないため、URLはパス指定なしです。設定例を示します。
-      ```
-      CONCOURSE_EXTERNAL_URL: https://nop-ci.adc-tis.com/
-      CONCOURSE_BASIC_AUTH_USERNAME: admin
-      CONCOURSE_BASIC_AUTH_PASSWORD: password
-      ```
-  - プロキシ環境下でConcourseを使用する場合は、さらにno_proxyにCQサーバのホストを追加します。
-    ```
-    nop/docker/ci/docker-compose.yml
-    ```
-    - 「concourse-worker」＞「environment」＞「no_proxy」に追記します。「26.247.128.119」を追記しています。
-      ```
-      concourse-worker:
-        container_name: concourse-worker
-        # 省略
-        environment:
-          # 省略
-          no_proxy: proxy,nexus.repository,26.247.128.119
-      ```
   - GitLabの外部URLを指定します。
     - 「gitlab」＞「environment」＞「GITLAB_OMNIBUS_CONFIG」＞「external_url」に指定します。
       ```
@@ -336,6 +301,48 @@ home
     #  "X-Forwarded-Ssl" => "on"
     #}
     ```
+- GitLabのCIを使う場合は、Dockerの設定を行います。
+  ```
+  $ sudo vi /etc/docker/daemon.json
+  ```
+  - CIで使用するDockerイメージをhttpでNexusに登録できるようにします。
+      ```
+      {
+       　"insecure-registries": ["<nexsusのホストのIPアドレス>:19081"]
+      }
+      ```
+    - 設定例を示します。
+      ```
+      {
+       　"insecure-registries": ["10.0.1.9:19081"]
+      }
+      ```
+  - Dockerで起動しているアプリを停止し、Dockerを再起動します。
+      - アプリを操作するディレクトリに移動します。
+        ```
+        $ cd nop/docker/ci/
+        ```
+      - アプリを停止します。
+        ```
+        $ docker-compose stop
+        ```
+      - Dockerを再起動します。
+        ```
+        $ sudo systemctl restart docker
+        ```
+      - Docker再起動と共に、アプリが再開したことを確認します。各アプリのStateがUpになってれば、起動いています。
+        ```
+        $ docker-compose ps
+        ```
+  - ホストにnexusへの認証情報を保存するためにDockerで一度ログインします。  
+    ```
+    $ docker login -u admin -p pass123- <CIサーバのIPアドレス>:19081
+    ```
+    - 例を示します。
+      ```
+      $ docker login -u admin -p pass123- 10.0.1.9:19081
+      ```
+
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
     ```
@@ -344,10 +351,6 @@ home
   - アプリを停止して削除します。
     ```
     $ docker-compose down
-    ```
-  - Concourseを使う場合はデータを削除します。
-    ```
-    $ sudo rm -rf /data/concourse*
     ```
   - アプリを作成して起動します。
     ```
@@ -672,119 +675,68 @@ home
 - 管理者のパスワードを変更します。
   - 画面右上のプルダウン＞「Settings」＞「Password」タブを選択します。
     - パスワードを変更します。
-- ConcourseからリポジトリにアクセスできるようにプロジェクトをPublicに変更します。
-  - 「sample」グループを公開します。
-    - 左上のメニューから「Groups」＞「Your groups」＞「sample」を選択します。
-    - 「Settings」タブを選択します。
-    - 「Visibility Level」を「Public」に変更し、「Save group」します。
-  - 「nablarch-example-web」プロジェクトを公開します。
-    - ロゴを選択しトップページ＞「Your projects」＞「sample/nablarch-example-web」を選択します。
-    - 「Settings」タブを選択します。
-    - 「Project Visibility」を「Public」に変更し、「Save changes」します。
+- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録するために必要なトークンを確認します。
+  - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択します。
+  - 「Use the following registration token during setup」に記載のトークンをコピーします。
 
-## Concourse
-
-- ブラウザでアクセスします。
-  ```
-  <CIサーバのホスト>/    ※Concourseはベースパスに対応していないため、URLはパス指定なしです。
-  ```
-- ブラウザでアクセスしたURLをブックマークしておきます。
-- ログインします。
-  - 画面右上の「login」を選択します。
-    - 「main」を選択します
-      - username/password: docker-composeの定義ファイルに指定したものを指定します。
-      - 画面右上にmainと表示されればログイン成功です。
-- nablarch-example-webのパイプラインを変更します。
-  - GibLabにnopユーザでログインします。
-    - Username: nop
-    - Password: pass456-
-  - 「sample/nablarch-example-web」を選択します。
-  - 画面中央にあるリポジトリのURLをコピーします。
-  - 作業PCの適当な場所にgit cloneします。
-    - ユーザ名/パスワードを聞かれるのでnopユーザを指定します。
-    - 503エラーとなった場合は環境変数no_proxyにCIサーバのホストを設定します。
+- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録します。
+  - SSHでアクセスします。
+    ```
+    $ ssh -F .ssh/ssh.config nop-ci
+    ```
+  - gitlab-runnerコマンドを起動します。
+    ```
+    $ docker exec -it gitlab-runner gitlab-runner register
+    ```
+  - 対話式で情報を入力します。
+    - http://<CIサーバのIPアドレス>/gitlabを入力します。以下に例を示します。
       ```
-      $ export no_proxy=26.247.135.132
+      Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
+      http://10.0.1.9/gitlab
       ```
-  - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
-  - ブランチを「develop」に切り替えます。
-  - パイプラインのパラメータを変更します。
-    ```
-    nablarch-example-web/ci/params.yml
-    ```
-    - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
-    - パラメータの設定は以下のような感じになります。
+    - ブラウザから確認したトークンを入力します。以下に例を示します。
       ```
-      git-project-url: http://proxy/gitlab/sample/nablarch-example-web.git
-
-      docker-repo-host-port: nexus.repository:18444
-      docker-repo-username: admin
-      docker-repo-password: pass123-
-
-      sonar-url: http://10.0.1.217/sonarqube
-
-      chat-webhook-url: http://10.0.1.217/rocketchat/hooks/KMFduPo2KDqRLsAwp/RkL...
-
-      demo-host: 10.0.1.121
-      demo-port: 22
-      demo-username: centos
-      demo-password: pass789-
+      Please enter the gitlab-ci token for this runner:
+      fhEsBxUScX3bWAWLfCWz
       ```
-  - パイプラインで使うMavenの設定を変更します。
-    ```
-    nablarch-example-web/ci/settings.xml
-    ```
-    - Nexusのユーザ名/パスワードだけを変更します。
-  - pushします。
-- Concouseにパイプラインを設定します。
-  - Concourseへのパイプライン設定はflyコマンドで行います。
-  - Concourseにアクセスしてツールをダウンロードします。
-  - ログアウトしてConcourseのトップページにアクセスします。
-    - 作業マシンのOSと同じアイコン(画面中央にあります)を選択して、ツールをダウンロードします。
-    - ツールにパスを通すか、nablarch-example-web/ciに置いて直接実行して使います。
-  - flyコマンドでConcouseにログインします。パスを通してない場合は「fly」→「fly.exe」で実行してください。
-    ```
-    $ cd <nablarch-example-web/ciへのパス>
-    $ fly -t main login -c <ConcourseのURL> -k
-    ```
-    - ConcourseのURLはブラウザでアクセスする場合と同じものを指定します。
-    - username/passwordが聞かれるので、docker-composeの定義ファイルに指定したものを入力します。
-      - 「target saved」と表示されればログイン成功です。
-      - こんな感じになります。
-        ```
-        $ fly -t main login -c https://nop-ci.adc-tis.com/ -k
-        logging in to team 'main'
-        
-        username: concourse
-        concourse
-        password: password
-        
-        target saved
-        ```
-  - パイプラインの設定をしたいので、flyコマンドでパイプラインを一旦削除します。
-    ```
-    $ fly -t main dp -p nablarch-example-web
-    ```
-    - 「are you sure? [yN]」と聞かれるので「y」と答えます。
-  - flyコマンドでパイプラインを設定します。
-    ```
-    $ fly -t main sp -p nablarch-example-web -c pipeline.yml -l params.yml
-    ```
-    - 「apply configuration? [yN]」と聞かれるので「y」と答えます。
-    - パイプラインを変更した場合はこのコマンドで更新します。
-  - ブラウザでConcourseにアクセスしてCIを実行します。
-    - Concourseがパイプラインを検知して、画面にパイプラインが表示されます。
-    - 表示されない場合は画面を更新してください。
-    - はじめは一時停止状態なので、画面左上の「メニュー」＞nablarch-example-webの「再生」アイコンを選択します。
-      - ![ConcourseのUnpause](images/concourse-unpause.png)
-  - 初回は大量の依存モジュールを落としてくるため、少し時間（5分～10分ぐらい）がかかります。
-  - CI結果（テスト、デプロイなど）はRocket.Chatに通知されます。
-  - 「deploy-to-demo-develop」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
-    ```
-    <DEMOサーバのホスト>/
-    ```
-    - ログインID: 10000001
-    - パスワード: pass123-
+    - 説明を入力します。改行のみで問題ないです。
+      ```
+      Please enter the gitlab-ci description for this runner:
+      [cc4d40bad12f]:
+      ```
+    - タグを入力します。改行のみで問題ないです。
+      ```
+      Please enter the gitlab-ci tags for this runner (comma separated):
+      ```
+    - executorの種類を入力します。`docker` と入力します。
+      ```
+      Please enter the executor: shell, docker, docker-ssh, parallels, ssh, virtualbox, docker+machine, docker-ssh+machine, custom, kubernetes:
+      docker
+      ```
+    - CIで使用するDockerイメージのデフォルトを入力します。`maven:3.6.2-jdk-8' と入力します。
+      ```
+      Please enter the default Docker image (e.g. ruby:2.6):
+      maven:3.6.2-jdk-8
+      ```
+  - config.tomlを編集します。
+    - viを起動します。
+      ```
+      $ sudo vi /data/gitlab-runner/config/config.toml
+      ```
+    - `clone_url = "http://1<CIサーバのIPアドレス>/gitlab"` を追記します。以下に例を示します。
+      ```
+      (中略)
+      [[runners]]
+      (中略)
+        executor = "docker"
+        clone_url = "http://10.0.1.9/gitlab" 
+        [runners.custom_build_dir]
+      (中略)
+      ```
+
+- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録されたことを確認します。
+  - ブラウザでGitLabにアクセスします。
+  - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択し、Runnerが存在することを確認します。
 
 
 # リカバリに備えてAMIを作成します

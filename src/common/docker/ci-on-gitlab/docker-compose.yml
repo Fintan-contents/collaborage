@@ -75,15 +75,14 @@ services:
     image: gitlab/gitlab-runner:ubuntu-v12.4.1
     restart: always
     volumes:
-      - ~/.docker/config.json:/root/.docker/config.json
-      - /data//gitlab-runner/config:/etc/gitlab-runner
+      - ~/.docker/:/root/.docker/
+      - /data/gitlab-runner/config:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
 
   nexus.repository:
     container_name: nexus.repository
     build:
-      context: ./nexus
-      dockerfile: Dockerfile
+      context: ./dockerfiles/nexus
     restart: always
     env_file: ./common.env
     environment:
@@ -92,13 +91,11 @@ services:
       - "8081:8081"
       - "8443:8443"
       # docker-group-repo (http)
-      - "18078:18078"
+      - "18081:18081"
       # docker-group-repo (https)
-      - "18079:18079"
+      - "18444:18444"
       # docker-hosted-repo (http)
-      - "18088:18088"
-      # docker-proxy-repo (http)
-      - "18098:18098"
+      - "19081:19081"
     volumes:
       - /data/nexus:/nexus-data
     logging:

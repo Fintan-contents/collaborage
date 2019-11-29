@@ -1,0 +1,41 @@
+image: <CIサーバのIPアドレス>:19081/maven-jdk-11-with-sshpass-on-docker
+
+stages:
+  - build
+  - deploy
+
+variables:
+  SONAR_HOST_URL: <SonarQubeのURL>
+  DEMO_HOST: <Demoサーバのホスト>
+  DEMO_PORT: <DemoサーバのSSHのポート番号>
+  DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
+  DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+
+Build_Job:
+  stage: build
+  script:
+    - mvn generate-resources -s ci/settings.xml
+    - mvn jacoco:prepare-agent test -s ci/settings.xml
+    - mvn sonar:sonar -Dsonar.host.url=http://${SONAR_HOST_URL}/sonarqube -Dsonar.branch=${CI_BUILD_REF_NAME} -s ci/settings.xml
+  artifacts:
+    paths:
+      - target
+    expire_in: 1 day
+
+Deploy_Job:
+  stage: deploy
+  only:
+    - develop
+  script:
+    - mvn clean -s ci/settings.xml
+    - mvn -P gsp generate-resources -s ci/settings.xml
+    - mvn compile waitt:jar -s ci/settings.xml
+    - mkdir -p target/app
+    - cp $(find target/ -name *standalone.jar) target/app/
+    - cp -r src/main/webapp/ target/app/
+    - cp -r h2/ target/app/
+    - cp ci/deploy-to-demo/* target/app/
+    - ls -l target/app/
+    - sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && rm -rf *"
+    - sshpass -p ${DEMO_PASSWORD} scp -P ${DEMO_PORT} -oStrictHostKeyChecking=no -r target/app/ ${DEMO_USERNAME}@${DEMO_HOST}:~/
+    - sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && sh up.sh"
