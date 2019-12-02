@@ -39,6 +39,10 @@
           # 省略
           ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
       ```
+    - Rocket.ChatのURLは「<ホスト>/rocketchat」となります。設定例を示します。
+      ```
+      ROOT_URL: https://nop-cq.adc-tis.com/rocketchat/
+      ```
   - GitLabを使用する場合は、GitLabの外部URLを指定します。
     ```
     nop/docker/ci/docker-compose.yml

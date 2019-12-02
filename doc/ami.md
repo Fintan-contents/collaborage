@@ -134,6 +134,10 @@ home
           # 省略
           ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
       ```
+    - Rocket.ChatのURLは「<ホスト>/rocketchat」となります。設定例を示します。
+      ```
+      ROOT_URL: https://nop-cq.adc-tis.com/rocketchat/
+      ```
 - プロキシ環境下の場合は、Dockerコンテナのプロキシの設定を変更します。
   ```
   $ vi nop/docker/cq/common.env

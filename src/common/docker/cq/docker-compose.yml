@@ -8,7 +8,7 @@ services:
     restart: always
     env_file: ./common.env
     environment:
-      no_proxy: redmine,rocketchat,sonarqube,subversion-server
+      no_proxy: redmine,rocketchat,sonarqube,subversion
     ports:
       - "80:80"
     volumes:
@@ -17,17 +17,17 @@ services:
       - redmine
       - rocketchat
       - sonarqube
-      - subversion-server
+      - subversion
     logging:
       options:
         max-size: "10m"
         max-file: "10"
 
-  subversion-server:
-    container_name: subversion-server
+  subversion:
+    container_name: subversion
     env_file: ./common.env
     build:
-      context: ./subversion-server
+      context: ./dockerfiles/subversion
     environment:
     - SVN_REPO=repo
     volumes:

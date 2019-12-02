@@ -147,7 +147,7 @@
   - ID: root
   - パスワード: pass123-
   ```
-    $ docker exec -t subversion-server htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd root pass123-
+    $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd root pass123-
   ```
 
 
