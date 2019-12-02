@@ -240,9 +240,14 @@
 
 - パイプラインを準備します。
   - 作業場所でパイプラインをnablarch-example-webにコピーします。
-    ```
-    $ cp -r pipeline/jenkins/* <nablarch-example-webへのパス>
-    ```
+    - Java 8でビルドする場合
+      ```
+      $ cp -r pipeline/jenkins/java8/* <nablarch-example-webへのパス>
+      ```
+    - Java 11でビルドする場合
+      ```
+      $ cp -r pipeline/jenkins/java11/* <nablarch-example-webへのパス>
+      ```
   - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
   - パイプラインのパラメータを変更します。
     ```
@@ -291,6 +296,26 @@
       </plugin>
       ```
   - pushします。
+- Java 11でビルドする場合は、JenkinsにJDKを追加します。
+  - Jenkinsに管理者でログインします。
+  - 「Jenkinsの管理」＞「Global Tool Configuration」を選択します。
+  - 「JDK追加」をクリックします。入力欄が表示されます。
+  - 「インストーラーの削除」をクリックし、「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
+  - 各項目を入力します。
+    - 名前: JDK11
+    - 自動インストール: on
+    - *.zip/*.tar.gz展開
+      - ラベル: 空欄
+      - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
+        以下に例を示します。
+        ```
+        https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+        ```
+      - アーカイブを展開するサブディレクトリ: ユニークなディレクトリを指定します。  
+        以下に例を示します。
+        ```
+        jdk-11.0.2
+        ```
 - Jenkinsにジョブを作成します。
   - Jenkinsに管理者でログインします。
   - Multibranch Pipelineを作成します。
