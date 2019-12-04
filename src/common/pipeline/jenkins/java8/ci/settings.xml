@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<settings>
+
+  <mirrors>
+    <mirror>
+      <id>private-repository</id>
+      <mirrorOf>*</mirrorOf>
+      <url>http://proxy/nexus/repository/maven-public/</url>
+    </mirror>
+  </mirrors>
+
+</settings>
