@@ -25,6 +25,7 @@ services:
 
   subversion:
     container_name: subversion
+    restart: always
     env_file: ./common.env
     build:
       context: ./dockerfiles/subversion
