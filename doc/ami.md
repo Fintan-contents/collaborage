@@ -305,11 +305,11 @@ home
     #  "X-Forwarded-Ssl" => "on"
     #}
     ```
-- GitLabのCIを使う場合は、Dockerの設定を行います。
+- GitLabのCIは、ビルドの実行環境をVirtualBox・Docker等から選べます。今回はDockerを使用しますので、その設定を行います。
   ```
   $ sudo vi /etc/docker/daemon.json
   ```
-  - CIで使用するDockerイメージをhttpでNexusに登録できるようにします。
+  - Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
       ```
       {
        　"insecure-registries": ["<nexsusのホストのIPアドレス>:19081"]
@@ -334,11 +334,11 @@ home
         ```
         $ sudo systemctl restart docker
         ```
-      - Docker再起動と共に、アプリが再開したことを確認します。各アプリのStateがUpになってれば、起動いています。
+      - Docker再起動と共に、アプリが再開したことを確認します。各アプリのStateがUpになっていれば、起動しています。
         ```
         $ docker-compose ps
         ```
-  - ホストにnexusへの認証情報を保存するためにDockerで一度ログインします。  
+  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
     ```
     $ docker login -u admin -p pass123- <CIサーバのIPアドレス>:19081
     ```
@@ -679,11 +679,11 @@ home
 - 管理者のパスワードを変更します。
   - 画面右上のプルダウン＞「Settings」＞「Password」タブを選択します。
     - パスワードを変更します。
-- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録するために必要なトークンを確認します。
+- GitLabのCIコンポーネント(GitLab Runner)を登録するために必要なトークンを確認します。
   - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択します。
   - 「Use the following registration token during setup」に記載のトークンをコピーします。
 
-- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録します。
+- GitLab Runnerを登録します。
   - SSHでアクセスします。
     ```
     $ ssh -F .ssh/ssh.config nop-ci
@@ -717,7 +717,7 @@ home
       Please enter the executor: shell, docker, docker-ssh, parallels, ssh, virtualbox, docker+machine, docker-ssh+machine, custom, kubernetes:
       docker
       ```
-    - CIで使用するDockerイメージのデフォルトを入力します。`maven:3.6.2-jdk-8' と入力します。
+    - CIで使用するDockerイメージのデフォルトを入力します。 `maven:3.6.2-jdk-8` と入力します。
       ```
       Please enter the default Docker image (e.g. ruby:2.6):
       maven:3.6.2-jdk-8
