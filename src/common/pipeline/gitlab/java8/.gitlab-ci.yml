@@ -17,10 +17,6 @@ Build_Job:
     - mvn generate-resources -s ci/settings.xml
     - mvn jacoco:prepare-agent test -s ci/settings.xml
     - mvn sonar:sonar -Dsonar.host.url=http://${SONAR_HOST_URL}/sonarqube -Dsonar.branch=${CI_BUILD_REF_NAME} -s ci/settings.xml
-  artifacts:
-    paths:
-      - target
-    expire_in: 1 day
 
 Deploy_Job:
   stage: deploy
