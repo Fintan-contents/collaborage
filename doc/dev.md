@@ -12,6 +12,7 @@
 - ユーザを追加します
   - [Redmineでのユーザ追加](#redmineでのユーザ追加)
   - [Rocket.Chatでのユーザ追加](#rocketchatでのユーザ追加)
+  - [Subversionでのユーザ追加](#subversionでのユーザ追加)
   - [GitBucketでのユーザ追加](#gitbucketでのユーザ追加)
   - [GitLabでのユーザ追加](#gitlabでのユーザ追加)
 - プロジェクト(またはリポジトリ)を追加します
@@ -92,6 +93,47 @@
 - チャンネル「#jenkins」「#gitlab」に参加します。
   - 画面左の「その他のチャンネル...」を選択し、チャンネルを選択します。
     - 画面一番下の「参加」を選択します。
+
+### Subversionでのユーザ追加
+管理者は作成済みですので、開発メンバのみ説明します。
+
+#### 開発メンバ
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- ユーザを作成します。
+  - ID: nop
+  - パスワード: pass456-
+  ```
+    $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
+  ```
+- ユーザに権限を付与します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - 作成したユーザのグループを権限設定を行います。  
+    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+    ```
+    (中略)
+    [groups]
+    (中略)
+    sample = nop
+    (中略)
+    [/]
+    (中略)
+    @sample = rw
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
+
 
 
 ### GitBucketでのユーザ追加

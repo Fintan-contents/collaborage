@@ -138,7 +138,6 @@
 
 ## Subversion
 
-
 - SSHでアクセスします。
   ```
     $ ssh -F .ssh/ssh.config nop-cq
@@ -149,8 +148,24 @@
   ```
     $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd root pass123-
   ```
-
-
+- ユーザに権限を付与します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - 以下を追記します。
+    ```
+    [/]
+    root = rw
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
 
 ## Nexus
 

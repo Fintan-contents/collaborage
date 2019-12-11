@@ -27,12 +27,12 @@ AMIは、次の手順で作成し、[Nablarch](https://github.com/nablarch/nabla
 各アプリでは、管理者、グループ、ユーザ、プロジェクト/リポジトリを次の内容で作成しています。
 
 - 管理者
-  - admin/pass123-（Redmine、Rocket.Chat、SonarQube、Nexus、Jenkins）
-  - root/pass123-（GitBucket、GitLab）
+  - admin/pass123-（Redmine、Rocket.Chat、SonarQube、Nexus、Jenkins、Subversion）
+  - root/pass123-（GitBucket、GitLab、Subversion）
 - グループ
   - sample（Redmine、GitBucket、GitLab）
 - ユーザ
-  - nop/pass456-（Redmine、Rocket.Chat、GitBucket、GitLab）
+  - nop/pass456-（Redmine、Rocket.Chat、GitBucket、GitLab、Subversion）
     - 開発メンバ
     - sampleグループに割り当て済みです。
   - jenkins/pass456-（Rocket.Chat）
