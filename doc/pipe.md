@@ -4,7 +4,7 @@
 ここでは、Collaborageが提供するパイプラインの内容を簡単に説明します。
 
 - [Jenkins](#jenkins)
-- [GitLab Runner](#gitlabrunner)
+- [GitLab Runner](#gitlab-runner)
 
 
 
