@@ -12,10 +12,6 @@ echo "## init data directory on ${NOP_APP_ID}"
 
 ./init-data.sh
 
-echo "## generate key for concourse on ${NOP_APP_ID}"
-
-./generate-key.sh
-
 echo "## docker-compose up on ${NOP_APP_ID}"
 
 docker-compose up -d

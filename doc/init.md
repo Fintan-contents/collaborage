@@ -12,7 +12,6 @@
 - [GitBucket](#gitbucket)
 - [Jenkins](#jenkins)
 - [GitLab](#gitlab)
-- [Concourse](#concourse)
 
 
 ## Redmine
@@ -93,21 +92,23 @@
         - ユーザを選択:
           - jenkins
         - 作ります。
-  - Concourseを使う場合
-    - Concourse用のチャンネルを作成します。
+  - GitLabを使う場合
+    - GitLab用のチャンネルを作成します。
       - 画面左上の「＋」アイコンを選択します。
-        - 名前: concourse
+        - 名前: gitlab
         - ユーザを選択: 
           - rocket.chat
         - 作ります。
-    - Concourseから通知を受け取るWebHook URLを作成します。
-      - 画面左上のプルダウン＞「管理」＞「サービス連携」＞「新しいサービス連携」＞「Incoming WebHook」を選択します。
+    - GitLabから通知を受け取るWebHook URLを作成します。
+      - 画面左上のプルダウン＞「管理」＞「サービス連携」＞「新しいサービス連携」＞「着信 WebHook」を選択します。
         - 有効: はい
-        - 名前 (オプション): concourse
-        - 投稿先チャンネル: #concourse
+        - 名前 (オプション): gitlab
+        - 投稿先チャンネル: #gitlab
+        - スクリプトを有効にする: はい
+        - Script: `https://github.com/malko/rocketchat-gitlab-hook/blob/edb82e61e011e2bbb6a5d8a56045e97a35bfe7ef/gitlab-rocketchat.hooks.js` の内容をコピペします。
         - 画面の一番下まで移動して、変更を保存します。
         - 変更を保存すると「Webhook URL」「Token」が出現します。
-        - 「Webhook URL」の「クリップボードへコピー」を選択して、URLをコピーします。後ほどパイプラインに設定します。
+        - 「Webhook URL」の「クリップボードへコピー」を選択して、URLをコピーします。後ほどGitLabに設定します。
 
 
 ## SonarQube
@@ -194,16 +195,21 @@
       - リポジトリ一覧から「maven-public」を選択します
       - Group > Member Repositories > Members: 追加したリポジトリを指定します。
       - Saveします。
-    - Concourseを使用する場合は、リポジトリ一覧に戻ってDocker Hubと公開用のグループを作成します。
+    - リポジトリ一覧に戻ってDocker Hub、GitLab CIで使用するイメージの配置場所、公開用のグループを作成します。
       - docker-hub
         - Recipe: docker(proxy)
         - Name: docker-hub
         - Proxy > Remote storage: https://registry-1.docker.io
+      - docker-hosted(hosted)
+        - Recipe: docker(hosted)
+        - Name: docker-hosted
+        - Repository Connectors > HTTP: 19081
+        - Allow anonymous docker pull:チェック
       - docker-public(グループ)
         - Recipe: docker(group)
         - Name: docker-public
         - Repository Connectors > HTTPS: 18444
-        - Group > Member repositories > Members: docker-hub
+        - Group > Member repositories > Members: docker-hub, docker-hosted
 
 
 ## GitBucket
@@ -321,26 +327,42 @@
   - Username or email: root
   - Password: 変更したパスワード
 - サインインページのユーザ登録(Register)を無効化します。
-  - 画面右上の「レンチ(Admin area)」アイコン)＞画面右上のユーザ画像の下にある「歯車」アイコン＞「Settings」を選択します
+  - 画面左上の「レンチ(Admin area)」アイコン)＞「Settings」を選択します
       - Sign-up Restrictions＞Sign-up enabled: OFF
       - Saveします。
-- ログアウトして、ユーザ登録(Register)が表示されないことを確認します。
+- ログアウトして、変更したパスワードで入りなおします。
   - 画面右上のユーザ画像＞「Sign out」
+- CI結果をチャットに通知するための通信許可設定を行います。
+  - 画面左上の「レンチ(Admin area)」アイコン)＞「Settings」＞「Network」を選択します
+    - Outbound requests＞Allow requests to the local network from web hooks and services: ON
 
-
-## Concourse
-
-
-- ブラウザでアクセスします。
+- ビルドしたプロジェクトをDemoサーバにデプロイする際に必要なコマンドを組み込んだDockerイメージを作るため、sshでアクセスします。
   ```
-  <CIサーバのホスト>/    ※Concourseはベースパスに対応していないため、URLはパス指定なしです。
+  $ ssh -F .ssh/ssh.config nop-ci
   ```
-- ブラウザでアクセスしたURLをブックマークしておきます。
-- ログインします。
-  - 画面右上の「login」を選択します。
-    - 「main」を選択します
-      - username/password: docker-composeの定義ファイルに指定したものを指定します。
-      - 画面右上にmainと表示されればログイン成功です。
+- Dockerfileが存在するディレクトリに移動します。
+  ```
+  $ cd ~/nop/docker/ci/dockerfiles/maven-jdk-8-with-sshpass-on-docker/
+  ```
+- GitLabのCIでビルドする際に使用するDockerイメージを作成します。
+  ```
+  $ docker build -t <CIサーバのIPアドレス>:19081/maven-jdk-8-with-sshpass-on-docker .
+  ```
+  - 例を示します。
+    ```
+    $ docker build -t 10.0.1.9:19081/maven-jdk-8-with-sshpass-on-docker .
+    ```
+- NexusにDockerイメージをpush作成します。
+  ```
+  $ docker push <CIサーバのIPアドレス>:19081/maven-jdk-8-with-sshpass-on-docker
+  ```
+  - 例を示します。
+    ```
+    $ docker push 10.0.1.9:19081/maven-jdk-8-with-sshpass-on-docker
+    ```
+- `~/nop/docker/ci/dockerfiles/maven-jdk-11-with-sshpass-on-docker/` に存在するDockerfileも同様にビルドとpushをします。
+
+
 
 これで初期設定は終わりです。
 少し休憩したら、[開発準備](dev.md)へ進みましょう。

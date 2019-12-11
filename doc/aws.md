@@ -99,7 +99,7 @@ AWS
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-0.1.6
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.0
-  - CIサーバ(GitLab)： nop-dev-ci-concourse-0.1.6
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.0
   - Demoサーバ： nop-inst-demo-0.1.4
 
 ### 作業PC
@@ -159,7 +159,7 @@ AWS
     ```
   - GitLabを使う場合
     ```
-    nop/template/nop-with-ssl-concourse.yaml
+    nop/template/nop-with-ssl-gitlab.yaml
     ```
   - アップロードの後、テンプレートファイルを選択し、リンクをコピーします。
     - ![S3のファイルリンク](images/aws-s3-link.png)
