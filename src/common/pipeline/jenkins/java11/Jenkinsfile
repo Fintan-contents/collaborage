@@ -57,6 +57,7 @@ pipeline {
         sh 'cp ci/deploy-to-demo/* target/app/'
         sh 'ls -l target/app/'
         echo 'Send app to demo'
+        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "mkdir -p app"'
         sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && rm -rf *"'
         sh 'sshpass -p ${DEMO_PASSWORD} scp -P ${DEMO_PORT} -oStrictHostKeyChecking=no -r target/app/ ${DEMO_USERNAME}@${DEMO_HOST}:~/'
         echo 'Start app'

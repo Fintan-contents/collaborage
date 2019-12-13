@@ -32,6 +32,7 @@ Deploy_Job:
     - cp -r h2/ target/app/
     - cp ci/deploy-to-demo/* target/app/
     - ls -l target/app/
+    - sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "mkdir -p app"
     - sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && rm -rf *"
     - sshpass -p ${DEMO_PASSWORD} scp -P ${DEMO_PORT} -oStrictHostKeyChecking=no -r target/app/ ${DEMO_USERNAME}@${DEMO_HOST}:~/
     - sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && sh up.sh"
