@@ -227,7 +227,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2Role
-      ImageId: ami-0e5214cb22a02bcc6
+      ImageId: ami-01e780164ed3ad9f2
       InstanceType: !Ref Ec2TypeForCi
       KeyName: !Ref Ec2KeyPair
       SubnetId: !Ref PrivateSubnet
