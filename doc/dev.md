@@ -420,8 +420,10 @@
     ```
     nablarch-example-web/.gitlab-ci.yml
     ```
-    - 環境変数を修正します。
+    - イメージと環境変数を修正します。
       ```
+      image: <CIサーバのホスト>:19081/<イメージ名>
+      (中略)
       variables:
         SONAR_HOST_URL: <SonarQubeのURL>
         DEMO_HOST: <Demoサーバのホスト>
@@ -432,6 +434,8 @@
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
     - こんな感じになります。
       ```
+      image: 10.0.1.93:19081/maven-jdk-8-with-sshpass-on-docker
+      (中略)
       variables:
         SONAR_HOST_URL: 10.0.1.75
         DEMO_HOST: 10.0.1.164

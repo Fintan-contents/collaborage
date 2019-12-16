@@ -98,8 +98,8 @@ AWS
   ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-0.2.0
-  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.0
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.0
+  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.1
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.1
   - Demoサーバ： nop-inst-demo-0.1.4
 
 ### 作業PC
@@ -107,6 +107,7 @@ AWS
 - gitコマンド/sshコマンドを使えるようにします。
   - Windowsであれば[Git for Windows](https://git-for-windows.github.io/)をインストールすれば、Git BASHを使用してgitコマンド/sshコマンドを使えます。
   - インストール方法は[このあたり](https://www.google.co.jp/search?q=git+for+windows+%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB&oq=Git+for+Windows%E3%80%80&gs_l=psy-ab.1.0.0l8.3848.3848.0.5856.1.1.0.0.0.0.139.139.0j1.1.0....0...1.4.64.psy-ab..0.1.138.7Ht2O-5L3YM)を参考にしてください。
+  - 古いGit BASHを使用していると、ssh経由でコマンドを実行した際にエラーが発生することがあります。現行バージョンをインストールすることをお勧めします。
 - sshコマンドで踏み台サーバにアクセスします。
   - アクセス方法は[このあたり](https://www.google.co.jp/search?q=aws+ec2+ssh+%E8%B8%8F%E3%81%BF%E5%8F%B0&oq=aws+ec2+ssh&gs_l=psy-ab.1.2.0l8.19285.21173.0.23904.7.7.0.0.0.0.140.668.0j5.5.0....0...1.1.64.psy-ab..2.5.667...0i131k1.HfnC6xbuzC4)を参考にしてください。
 
@@ -268,6 +269,16 @@ AWS
   Demoサーバ
   アプリをデプロイしていないので、この時点ではアクセスできません。
   ```
+  - アクセスできない場合は以下を確認してください。
+    - ブラウザは、https://から始まるURLを表示しようとしていますか？https://と入力したはずなのに、http://から始まるURLを表示しようとしていることがあります。
+    - Route53について以下を確認してください。
+      - 以前使ったサブドメインの名前を使ってませんか？使ったばかりの名前を再利用した場合、アクセスできるようになるまで時間が掛かるかもしれません。
+      - レコードセットを追加した際のALBの名前は、間違っていませんか？
+    - AWSの以下のサービスは稼働していますか？ https://status.aws.amazon.com/ から確認してください。
+      - Amazon Elastic Load Balancing
+      - Amazon Elastic Compute Cloud
+      - Amazon Route 53
+  - これらを確認して問題が無かった場合、ALBやRoute 53が使用可能になるまで、まだ時間が掛かるのかもしれません。10分程度時間おいてから、表示できるか試してください。
 
 
 ### AMIから作成したEC2インスタンスの初期設定を行います

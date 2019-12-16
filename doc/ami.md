@@ -86,7 +86,7 @@ home
   - AWSマネジメントコンソールでEC2にアクセスし、「ライフサイクルマネージャー」＞「スナップショットライフサイクルポリシーの作成」をクリックします。
     - 説明: nop-data-volume-backup
     - リソースタイプを選択します: ボリューム
-    - これらのタグを持つターゲット: Name:nop-ebs-data-cq
+    - これらのタグを持つターゲット: NopDataDlmTarget:true
       - タグはテキストボックスをクリックすると表示される選択肢から選びます。  
         選ぶと以下のようになります。
         - ![](images/aws-ec2-dlm-target-tag.png)
@@ -148,6 +148,18 @@ home
   ```
   $ sudo yum -y update
   ```
+- SSHを切断します。
+  ```
+  $ exit
+  ```
+- CQサーバを一度停止し、起動しなおします。
+  - AWSマネジメントコンソールでEC2にアクセスし、nop-ec2-cqのインスタンスを選択します。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「停止」を選択します。
+  - 停止するまで待ちます。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「開始」を選択します。
+- SSHでCQサーバにアクセスします。  
+  AWSマネジメントコンソール上で起動しても接続できない場合があります。  
+  その場合は待ちます(5分以上待つ必要があることもあります)。
 - Rocket.Chatの設定を変更します。
   ```
   $ vi nop/docker/cq/docker-compose.yml
@@ -192,7 +204,7 @@ home
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
     ```
-    $ cd nop/docker/cq/
+    $ cd ~/nop/docker/cq/
     ```
   - アプリを停止して削除します。
     ```
@@ -206,6 +218,17 @@ home
     ```
     $ ./redmine-sub-uri.sh
     ```
+  - ブラウザでアクセスします。
+    ```
+    <CQサーバのホスト>/redmine
+    ```
+    - アクセスできない場合は、以下のコマンドでredmineのログを確認します。
+      ```
+      $ docker-compose logs redmine
+      ```
+      プロキシの設定がされているのにgemの取得に失敗しているログがでている場合は、外部のサイトが一時的に停止している可能性があります。  
+      この場合は数時間おいて、「アプリを停止して削除します」からやり直します。
+    
 - トピックのARNを変更します。
   ```
   $ vi ~/.bash_profile
@@ -296,6 +319,18 @@ home
   ```
   $ sudo yum -y update
   ```
+- SSHを切断します。
+  ```
+  $ exit
+  ```
+- CIサーバを一度停止し、起動しなおします。
+  - AWSマネジメントコンソールでEC2にアクセスし、nop-ec2-ciのインスタンスを選択します。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「停止」を選択します。
+  - 停止するまで待ちます。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「開始」を選択します。
+- SSHでCIサーバにアクセスします。  
+  AWSマネジメントコンソール上で起動しても接続できない場合があります。  
+  その場合は待ちます(5分以上待つ必要があることもあります)。
 - プロキシ環境下の場合は、Dockerコンテナのプロキシの設定を変更します。
   ```
   $ vi nop/docker/ci/common.env
@@ -359,7 +394,7 @@ home
   - Dockerで起動しているアプリを停止し、Dockerを再起動します。
       - アプリを操作するディレクトリに移動します。
         ```
-        $ cd nop/docker/ci/
+        $ cd ~/nop/docker/ci/
         ```
       - アプリを停止します。
         ```
@@ -385,7 +420,7 @@ home
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
     ```
-    $ cd nop/docker/ci/
+    $ cd ~/nop/docker/ci/
     ```
   - アプリを停止して削除します。
     ```
@@ -481,6 +516,18 @@ home
   ```
   $ sudo yum -y update
   ```
+- SSHを切断します。
+  ```
+  $ exit
+  ```
+- Demoサーバを一度停止し、起動しなおします。
+  - AWSマネジメントコンソールでEC2にアクセスし、nop-ec2-demoのインスタンスを選択します。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「停止」を選択します。
+  - 停止するまで待ちます。
+  - 画面上部の「アクション」＞「インスタンスの状態」＞「開始」を選択します。
+- SSHでDemoサーバにアクセスします。  
+  AWSマネジメントコンソール上で起動しても接続できない場合があります。  
+  その場合は待ちます(5分以上待つ必要があることもあります)。
 - プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
   - docker.serviceをコピーします。
     ```
@@ -524,8 +571,14 @@ home
 - 先ほど確認したメトリクスを選択し次に進みます。
   - ![CloudWatchのアラームのメトリクス](images/aws-cw-alarm-metrics.png)
 - アラームの定義を指定して作成します。
-  - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config.png)
-    - 「名前」、「しきい値」、「通知の送信先」を指定します。
+  - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config1.png)
+    - 「アラーム条件」、「しきい値」を指定し、「次へ」をクリックします。
+  - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config2.png)
+    - 「通知の送信先」を指定し、「次へ」をクリックします。
+  - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config3.png)
+    - 「アラーム名」を指定し、「次へ」をクリックします。
+      - アラーム名は「CIサーバのディスク使用率」「CQサーバのディスク使用率」等、任意の名前にします。
+  - 「アラームの作成」をクリックします。
 
 
 # CloudWatchでバックアップ失敗時の通知を設定します
@@ -578,7 +631,6 @@ home
 - 管理者でログインします。
   - ユーザ名: admin
   - パスワード: pass123-
-- サイトURL設定のWarningが表示されるので「はい」を選択します。
 - 管理者のパスワードを変更します。
  - 画面左上のadmin横のプルダウン＞「マイアカウント」＞「プロフィール」を選択します。
    - 新しいパスワードを入力して、変更を保存します。
@@ -625,6 +677,8 @@ home
   ```
   <CIサーバのホスト>/gitbucket
   ```
+  - 初回表示時、ブラウザがhttp://で始まるURLを表示しようとすることがあります。  
+    エラーが発生した場合は、入力通りのプロトコルから始まるURLを表示しようとしているか、確認してください。
 - ブラウザでアクセスしたURLをブックマークしておきます。
 - 管理者でログインします。  
   - 画面右上の「Sign in」を選択します。
@@ -661,6 +715,10 @@ home
       - 対象外ホスト: Jenkinsからアクセスする可能性がある「proxy(docker-composeのサービス名)」と「CQサーバのプライベートIP」をカンマ区切りで指定します。
         - 例: proxy,10.0.1.110
         - 指定内容は[URLの仕組み](url.md)を参照してください。
+- Jenkinsの位置のJenkins URLにURLを指定します。  
+  この設定を行うことで、Jenkinsの管理画面に表示される「リバースプロキシの設定がおかしいようです」という警告を解決できます。
+  - ブラウザでアクセスする場合と同じURLを指定します。
+  - 例: https://nop-ci.adc-tis.com/jenkins
 - RocketChatへの通知設定を変更します。
   - ロゴを選択してトップページを表示します。
   - 画面左の「Jenkinsの管理」＞「システムの設定」を選択します。
@@ -668,9 +726,6 @@ home
       - Rocket Server URL: Rocket.ChatのURLを指定します。
       - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
       - 例: http://10.0.1.110/rocketchat/
-    - Build Server URL: JenkinsのURLを指定します。
-      - こちらはブラウザでアクセスする場合と同じURLを指定します。
-      - 例: https://nop-ci.adc-tis.com/jenkins
     - Test Connectionします。Successと表示されればOKです。Rocket.Chatのチャンネルにメッセージが届いています。
       - メッセージのリンクをクリックしてJenkinsへ移動できることを確認します。
     - 保存します。
@@ -686,7 +741,7 @@ home
       ```
       $ export no_proxy=26.247.135.132
       ```
-  - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
+  - IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
   - ブランチを「develop」に切り替えます。
   - パイプラインのパラメータを変更します。
     ```
@@ -796,9 +851,81 @@ home
       (中略)
       ```
 
-- GitabにGitLabのCIコンポーネント(GitLab Runner)を登録されたことを確認します。
+- GitLabにGitLabのCIコンポーネント(GitLab Runner)を登録されたことを確認します。
   - ブラウザでGitLabにアクセスします。
   - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択し、Runnerが存在することを確認します。
+  - 登録した以外のRunnnerが存在する場合、使わないため消します。
+- nablarch-example-webのパイプラインを変更します。
+  - GibLabにnopユーザでログインします。
+    - Username: nop
+    - Password: pass456-
+  - 「sample/nablarch-example-web」を選択します。
+  - 画面中央にあるリポジトリのURLをコピーします。
+  - 作業PCの適当な場所にgit cloneします。
+    - ユーザ名/パスワードを聞かれるのでnopユーザを指定します。
+    - 503エラーとなった場合は環境変数no_proxyにCIサーバのホストを設定します。
+      ```
+      $ export no_proxy=26.247.135.132
+      ```
+  - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
+  - ブランチを「develop」に切り替えます。
+  - パイプラインのパラメータを変更します。
+    ```
+    nablarch-example-web/.gitlab-ci.yml
+    ```
+    - イメージの取得元と環境変数を修正します。
+      ```
+      image: <CIサーバのホスト>:19081/maven-jdk-11-with-sshpass-on-docker
+      (中略)
+      variables:
+        SONAR_HOST_URL: <SonarQubeのURL>'
+        DEMO_HOST: <Demoサーバのホスト>
+        DEMO_PORT: <DemoサーバのSSHのポート番号>
+        DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
+        DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+      ```
+      - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
+      - パラメータの設定は以下のような感じになります。  
+        imageはNexusから取得するので、CIサーバのIPアドレスを指定してください。
+        ```
+        image: 10.0.1.93:19081/maven-jdk-11-with-sshpass-on-docker
+        (中略)
+        variables:
+          SONAR_HOST_URL: 10.0.1.118
+          DEMO_HOST: 10.0.1.88
+          DEMO_PORT: 22
+          DEMO_USERNAME: centos
+          DEMO_PASSWORD: pass789-
+        ```
+  - パイプラインで使うMavenの設定を変更します。
+    ```
+    nablarch-example-web/ci/settings.xml
+    ```
+    - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
+    - パラメータの設定は以下のような感じになります。
+      ```
+      <?xml version="1.0" encoding="UTF-8"?>
+      <settings>      
+        <mirrors>
+          <mirror>
+            <!-- 中略 -->
+            <url>http://10.0.1.93/nexus/repository/maven-public/</url>
+            <!-- 中略 -->
+          </mirror>
+        </mirrors>
+      
+      </settings>
+      ```
+  - pushします。
+- GitLabが変更を検知してジョブが実行されます。
+  - CI結果（テスト、デプロイなど）はRocket.Chatに通知されます。
+  - 「Deploy_Job」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
+    ```
+    <DEMOサーバのホスト>/
+    ```
+    - ログインID: 10000001
+    - パスワード: pass123-
+
 
 
 # リカバリに備えてAMIを作成します
