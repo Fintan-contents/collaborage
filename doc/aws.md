@@ -44,7 +44,7 @@ AWS
 - Amazon DLMを定期実行し、EBSのスナップショットを取得します。
   - スナップショット取得
     - Amazon DLMにて取得します。
-    - **スナップショットの取得対象は、Nameタグに「nop-ebs-data-(cq|ci)」が設定されているEBSとなります。**
+    - **スナップショットの取得対象は、NopDataDlmTargetタグに「true」が設定されているEBSとなります。**
 
 ### 監視
 
