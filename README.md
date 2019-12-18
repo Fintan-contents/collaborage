@@ -100,10 +100,10 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
         - ![](doc/images/jenkins-pipeline.png)
         - パイプラインの内容が表形式で表示され、色により成功/失敗を一目で確認できます。
         - 表のセルを選択して、実行時のログを確認することができます。
-      - Concourse
-        - ![](doc/images/concourse-pipeline.png)
-        - パイプラインの内容が箱と線で表示され、色により状態を一目で確認できます。
-        - Jobの箱を選択して、実行時のログを確認することができます。
+      - GitLab Runner(GitLabのCIコンポーネント)
+        - ![](doc/images/gitlab-pipeline.png)
+        - パイプラインの内容が箱と線で表示され、楕円の箱中のアイコン(画像では✔マーク)により状態を一目で確認できます。
+        - 楕円の箱を選択して、実行時のログを確認することができます。
     - CIの結果がチャットに通知され、CI結果にすぐに気づけます
       - ![](doc/images/rocketchat-notify.png)
       - CIの成功/失敗をアイコンで表しています。
@@ -111,8 +111,8 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
     - CIでデモ環境にデプロイされ、すぐに動作確認できます
       - ![](doc/images/demo-example.png)
     - パイプラインを定義ファイルに記載して、Jenkinsおじさん(属人化)の発生を防ぎます
-      - [Jenkins](src/common/pipeline/jenkins/Jenkinsfile)
-      - [Concourse](src/common/pipeline/concourse/ci/pipeline.yml)
+      - [Jenkins](src/common/pipeline/jenkins/java8/Jenkinsfile)
+      - [GitLab Runner](src/common/pipeline/gitlab/java8/.gitlab-ci.yml)
       - パイプラインのファイルはアプリと同じVCSにpushして管理するので、変更履歴も簡単に確認できます。
 
 
