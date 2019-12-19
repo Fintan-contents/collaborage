@@ -410,14 +410,6 @@ home
         ```
         $ docker-compose ps
         ```
-  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
-    ```
-    $ docker login -u admin -p pass123- <CIサーバのIPアドレス>:19081
-    ```
-    - 例を示します。
-      ```
-      $ docker login -u admin -p pass123- 10.0.1.9:19081
-      ```
 
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
@@ -807,6 +799,14 @@ home
     ```
     $ ssh -F .ssh/ssh.config nop-ci
     ```
+  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
+    ```
+    $ docker login -u admin -p <変更したパスワード> <CIサーバのIPアドレス>:19081
+    ```
+    - 例を示します。
+      ```
+      $ docker login -u admin -p pass123- 10.0.1.9:19081
+      ```
   - gitlab-runnerコマンドを起動します。
     ```
     $ docker exec -it gitlab-runner gitlab-runner register
