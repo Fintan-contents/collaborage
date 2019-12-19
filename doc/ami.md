@@ -274,6 +274,24 @@ home
     - 監視用のメトリクス取得…5分間隔
     - アプリデータのバックアップ前のアプリ停止…23時00分
     - アプリデータのバックアップ後のアプリ開始… 0時30分
+- プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
+  - docker.serviceをコピーします。
+    ```
+    $ sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
+    ```
+  - コピーしたdocker.serviceにProxyの設定を追加します。
+    ```
+    $ sudo vi /etc/systemd/system/docker.service
+    ```
+    - ExecStartコマンドの直前にProxyの設定を追加します。
+      ```
+      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      ```
+  - 設定の再読込とDockerの再起動を行います。
+    ```
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+    ```
 - SSHを切断します。
   ```
   $ exit
@@ -468,6 +486,24 @@ home
     - 監視用のメトリクス取得…5分間隔
     - アプリデータのバックアップ前のアプリ停止…23時00分
     - アプリデータのバックアップ後のアプリ開始… 0時30分
+- プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
+  - docker.serviceをコピーします。
+    ```
+    $ sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
+    ```
+  - コピーしたdocker.serviceにProxyの設定を追加します。
+    ```
+    $ sudo vi /etc/systemd/system/docker.service
+    ```
+    - ExecStartコマンドの直前にProxyの設定を追加します。
+      ```
+      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      ```
+  - 設定の再読込とDockerの再起動を行います。
+    ```
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+    ```
 - SSHを切断します。
   ```
   $ exit
