@@ -917,7 +917,7 @@ home
     ```
     - イメージの取得元と環境変数を修正します。
       ```
-      image: <CIサーバのホスト>:19081/maven-jdk-11-with-sshpass-on-docker
+      image: <CIサーバのホスト>:19081/maven-jdk-8-with-sshpass-on-docker
       (中略)
       variables:
         SONAR_HOST_URL: <SonarQubeのURL>'
@@ -930,7 +930,7 @@ home
       - パラメータの設定は以下のような感じになります。  
         imageはNexusから取得するので、CIサーバのIPアドレスを指定してください。
         ```
-        image: 10.0.1.93:19081/maven-jdk-11-with-sshpass-on-docker
+        image: 10.0.1.93:19081/maven-jdk-8-with-sshpass-on-docker
         (中略)
         variables:
           SONAR_HOST_URL: 10.0.1.118
