@@ -274,6 +274,24 @@ home
     - 監視用のメトリクス取得…5分間隔
     - アプリデータのバックアップ前のアプリ停止…23時00分
     - アプリデータのバックアップ後のアプリ開始… 0時30分
+- プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
+  - docker.serviceをコピーします。
+    ```
+    $ sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
+    ```
+  - コピーしたdocker.serviceにProxyの設定を追加します。
+    ```
+    $ sudo vi /etc/systemd/system/docker.service
+    ```
+    - ExecStartコマンドの直前にProxyの設定を追加します。
+      ```
+      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      ```
+  - 設定の再読込とDockerの再起動を行います。
+    ```
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+    ```
 - SSHを切断します。
   ```
   $ exit
@@ -410,14 +428,6 @@ home
         ```
         $ docker-compose ps
         ```
-  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
-    ```
-    $ docker login -u admin -p pass123- <CIサーバのIPアドレス>:19081
-    ```
-    - 例を示します。
-      ```
-      $ docker login -u admin -p pass123- 10.0.1.9:19081
-      ```
 
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
@@ -476,6 +486,24 @@ home
     - 監視用のメトリクス取得…5分間隔
     - アプリデータのバックアップ前のアプリ停止…23時00分
     - アプリデータのバックアップ後のアプリ開始… 0時30分
+- プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
+  - docker.serviceをコピーします。
+    ```
+    $ sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
+    ```
+  - コピーしたdocker.serviceにProxyの設定を追加します。
+    ```
+    $ sudo vi /etc/systemd/system/docker.service
+    ```
+    - ExecStartコマンドの直前にProxyの設定を追加します。
+      ```
+      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      ```
+  - 設定の再読込とDockerの再起動を行います。
+    ```
+    $ sudo systemctl daemon-reload
+    $ sudo systemctl restart docker
+    ```
 - SSHを切断します。
   ```
   $ exit
@@ -807,6 +835,14 @@ home
     ```
     $ ssh -F .ssh/ssh.config nop-ci
     ```
+  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
+    ```
+    $ docker login -u admin -p <変更したパスワード> <CIサーバのIPアドレス>:19081
+    ```
+    - 例を示します。
+      ```
+      $ docker login -u admin -p pass123- 10.0.1.9:19081
+      ```
   - gitlab-runnerコマンドを起動します。
     ```
     $ docker exec -it gitlab-runner gitlab-runner register
@@ -881,7 +917,7 @@ home
     ```
     - イメージの取得元と環境変数を修正します。
       ```
-      image: <CIサーバのホスト>:19081/maven-jdk-11-with-sshpass-on-docker
+      image: <CIサーバのホスト>:19081/maven-jdk-8-with-sshpass-on-docker
       (中略)
       variables:
         SONAR_HOST_URL: <SonarQubeのURL>'
@@ -894,7 +930,7 @@ home
       - パラメータの設定は以下のような感じになります。  
         imageはNexusから取得するので、CIサーバのIPアドレスを指定してください。
         ```
-        image: 10.0.1.93:19081/maven-jdk-11-with-sshpass-on-docker
+        image: 10.0.1.93:19081/maven-jdk-8-with-sshpass-on-docker
         (中略)
         variables:
           SONAR_HOST_URL: 10.0.1.118
