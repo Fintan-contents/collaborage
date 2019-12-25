@@ -337,6 +337,8 @@
         </configuration>
       </plugin>
       ```
+  - Java11でビルドする場合は以下を参考に、pom.xmlとunit-test.xmlを修正します。  
+    https://nablarch.github.io/docs/LATEST/doc/application_framework/application_framework/blank_project/setup_blankProject/setup_Java11.html
   - pushします。
 - Java 11でビルドする場合は、JenkinsにJDKを追加します。
   - Jenkinsに管理者でログインします。
