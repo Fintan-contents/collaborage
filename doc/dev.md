@@ -35,6 +35,39 @@
   - 名前: sample
 - 作成します。
 
+### Subversionでのグループ追加
+
+#### 管理者
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- グループを作成します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - グループを追加し、権限設定を行います。  
+    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+    ```
+    (中略)
+    [groups]
+    (中略)
+    sample = 
+    (中略)
+    [/]
+    (中略)
+    @sample = rw
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
+
 
 ### GitBucketでのグループ追加
 
@@ -95,35 +128,31 @@
     - 画面一番下の「参加」を選択します。
 
 ### Subversionでのユーザ追加
-管理者は作成済みですので、開発メンバのみ説明します。
 
-#### 開発メンバ
+#### 管理者
 - SSHでアクセスします。
   ```
     $ ssh -F .ssh/ssh.config nop-cq
   ```
-- ユーザを作成します。
+- ユーザを作成します。  
+   htpasswdコマンドの実行時、[アプリの初期設定 Subversion](init.md#subversion)と同じオプション(cオプション)を付けると、既存ユーザが消えます。注意してください。
   - ID: nop
-  - パスワード: pass456-
+  - パスワード: pass456-  
   ```
-    $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
+    $ docker exec -t subversion htpasswd -b /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
   ```
-- ユーザに権限を付与します。
+- ユーザに権限を付与するため、グループに追加します。
   - `/data/svn/repo/conf/authz` を開きます。
     ```
     sudo vi /data/svn/repo/conf/authz
     ```
-  - 作成したユーザのグループを権限設定を行います。  
-    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+  - 作成したユーザをグループに追加します。
     ```
     (中略)
     [groups]
     (中略)
     sample = nop
     (中略)
-    [/]
-    (中略)
-    @sample = rw
     ```
 - アプリを操作するディレクトリに移動します。
   ```
@@ -134,6 +163,13 @@
   docker-compose restart subversion
   ```
 
+#### 開発メンバ
+
+- ブラウザでアクセスします。
+  ```
+  <CQサーバのホスト>/svn
+  ```
+- 管理者が作成したユーザでログインします。
 
 
 ### GitBucketでのユーザ追加
