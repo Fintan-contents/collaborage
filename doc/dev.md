@@ -356,18 +356,18 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.3に変更します。1.2.3以上であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>
