@@ -111,7 +111,7 @@ services:
 
   sonarqube:
     container_name: sonarqube
-    image: sonarqube:7.9.1-community
+    image: sonarqube:6.7.5-alpine
     restart: always
     env_file: ./common.env
     environment:
