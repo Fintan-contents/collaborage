@@ -356,7 +356,7 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.3に変更します。1.2.3以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
@@ -391,7 +391,7 @@
         ```
         https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
         ```
-      - アーカイブを展開するサブディレクトリ: ユニークなディレクトリを指定します。  
+      - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
         以下に例を示します。
         ```
         jdk-11.0.2
@@ -498,18 +498,18 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>
