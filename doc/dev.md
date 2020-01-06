@@ -7,6 +7,7 @@
 
 - グループを追加します
   - [Redmineでのグループ追加](#redmineでのグループ追加)
+  - [Subversionでのグループ追加](#subversionでのグループ追加)
   - [GitBucketでのグループ追加](#gitbucketでのグループ追加)
   - [GitLabでのグループ追加](#gitlabでのグループ追加)
 - ユーザを追加します
