@@ -682,7 +682,7 @@ home
     - Login: admin
     - Password: pass123-
 - 管理者のパスワードを変更します。
-  - 画面上の「Administration」＞「Security」＞「Users」を選択します。
+  - 画面上部の「Administration」＞「Security」＞「Users」を選択します。
     - adminの鍵アイコン「Change password」を選択し、パスワードを変更します。
 
 ## Nexus
