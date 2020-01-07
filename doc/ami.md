@@ -67,7 +67,7 @@ home
 ```
 
 # データボリュームを定期的にバックアップするように設定します
-- バックアップ対象の目印となる名前をデータボリュームに設定します。
+- バックアップ対象の目印となるタグをデータボリュームに設定します。
   - AWSマネジメントコンソールでEC2にアクセスし、「nop-ec2-cq」＞ブロックデバイスの「/dev/sdb」＞「EBS ID」のリンクを選択します。
     - ![](images/aws-ec2-datavolume.png)
   - Name列にカーソルを持っていくと鉛筆アイコンが表示されるので選択し、「nop-ebs-data-cq」と指定します。
@@ -666,7 +666,7 @@ home
   - ユーザ名: admin
   - パスワード: pass123-
 - 管理者のパスワードを変更します。
- - 画面左上のadmin横のプルダウン＞「マイアカウント」＞「プロフィール」を選択します。
+ - 画面左上のAのアイコンをクリックして表示されるプルダウン＞「マイアカウント」＞「プロフィール」を選択します。
    - 新しいパスワードを入力して、変更を保存します。
    - 変更前のパスワードの入力が求められるので「pass123-」を入力します。
 
@@ -682,7 +682,7 @@ home
     - Login: admin
     - Password: pass123-
 - 管理者のパスワードを変更します。
-  - 画面右上の「Administration」＞「Security」＞「Users」を選択します。
+  - 画面上部の「Administration」＞「Security」＞「Users」を選択します。
     - adminの鍵アイコン「Change password」を選択し、パスワードを変更します。
 
 ## Nexus
@@ -749,20 +749,21 @@ home
       - 対象外ホスト: Jenkinsからアクセスする可能性がある「proxy(docker-composeのサービス名)」と「CQサーバのプライベートIP」をカンマ区切りで指定します。
         - 例: proxy,10.0.1.110
         - 指定内容は[URLの仕組み](url.md)を参照してください。
-- Jenkinsの位置のJenkins URLにURLを指定します。  
+- JenkinsのURLを設定します。  
   この設定を行うことで、Jenkinsの管理画面に表示される「リバースプロキシの設定がおかしいようです」という警告を解決できます。
-  - ブラウザでアクセスする場合と同じURLを指定します。
-  - 例: https://nop-ci.adc-tis.com/jenkins
-- RocketChatへの通知設定を変更します。
   - ロゴを選択してトップページを表示します。
   - 画面左の「Jenkinsの管理」＞「システムの設定」を選択します。
-    - 画面一番下のGlobal RocketChat Notifier Settingsを指定します。
-      - Rocket Server URL: Rocket.ChatのURLを指定します。
-      - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
-      - 例: http://10.0.1.110/rocketchat/
-    - Test Connectionします。Successと表示されればOKです。Rocket.Chatのチャンネルにメッセージが届いています。
-      - メッセージのリンクをクリックしてJenkinsへ移動できることを確認します。
-    - 保存します。
+  - Jenkinsの位置のJenkins URLにURLを指定します。  
+    - ブラウザでアクセスする場合と同じURLを指定します。
+    - 例: https://nop-ci.adc-tis.com/jenkins
+- RocketChatへの通知設定を変更します。
+  - 画面一番下のGlobal RocketChat Notifier Settingsを指定します。
+    - Rocket Server URL: Rocket.ChatのURLを指定します。
+    - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
+    - 例: http://10.0.1.110/rocketchat/
+  - Test Connectionします。Successと表示されればOKです。Rocket.Chatのチャンネルにメッセージが届いています。
+    - メッセージのリンクをクリックしてJenkinsへ移動できることを確認します。
+  - 保存します。
 - nablarch-example-webのパイプラインを変更します。
   - GibBucketにnopユーザでログインします。
     - Username: nop

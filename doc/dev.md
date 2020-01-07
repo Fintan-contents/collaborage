@@ -7,6 +7,7 @@
 
 - グループを追加します
   - [Redmineでのグループ追加](#redmineでのグループ追加)
+  - [Subversionでのグループ追加](#subversionでのグループ追加)
   - [GitBucketでのグループ追加](#gitbucketでのグループ追加)
   - [GitLabでのグループ追加](#gitlabでのグループ追加)
 - ユーザを追加します
@@ -34,6 +35,39 @@
 - 画面左上の「管理」＞「グループ」＞「新しいグループ」を選択します。
   - 名前: sample
 - 作成します。
+
+### Subversionでのグループ追加
+
+#### 管理者
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- グループを作成します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - グループを追加し、権限設定を行います。  
+    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+    ```
+    (中略)
+    [groups]
+    (中略)
+    sample = 
+    (中略)
+    [/]
+    (中略)
+    @sample = rw
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
 
 
 ### GitBucketでのグループ追加
@@ -95,35 +129,31 @@
     - 画面一番下の「参加」を選択します。
 
 ### Subversionでのユーザ追加
-管理者は作成済みですので、開発メンバのみ説明します。
 
-#### 開発メンバ
+#### 管理者
 - SSHでアクセスします。
   ```
     $ ssh -F .ssh/ssh.config nop-cq
   ```
-- ユーザを作成します。
+- ユーザを作成します。  
+   htpasswdコマンドの実行時、[アプリの初期設定 Subversion](init.md#subversion)と同じオプション(cオプション)を付けると、既存ユーザが消えます。注意してください。
   - ID: nop
-  - パスワード: pass456-
+  - パスワード: pass456-  
   ```
-    $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
+    $ docker exec -t subversion htpasswd -b /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
   ```
-- ユーザに権限を付与します。
+- ユーザに権限を付与するため、グループに追加します。
   - `/data/svn/repo/conf/authz` を開きます。
     ```
     sudo vi /data/svn/repo/conf/authz
     ```
-  - 作成したユーザのグループを権限設定を行います。  
-    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+  - 作成したユーザをグループに追加します。
     ```
     (中略)
     [groups]
     (中略)
     sample = nop
     (中略)
-    [/]
-    (中略)
-    @sample = rw
     ```
 - アプリを操作するディレクトリに移動します。
   ```
@@ -134,6 +164,13 @@
   docker-compose restart subversion
   ```
 
+#### 開発メンバ
+
+- ブラウザでアクセスします。
+  ```
+  <CQサーバのホスト>/svn
+  ```
+- 管理者が作成したユーザでログインします。
 
 
 ### GitBucketでのユーザ追加
@@ -320,23 +357,25 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>
       </plugin>
       ```
+  - Java11でビルドする場合は以下を参考に、pom.xmlとunit-test.xmlを修正します。  
+    https://nablarch.github.io/docs/LATEST/doc/application_framework/application_framework/blank_project/setup_blankProject/setup_Java11.html
   - pushします。
 - Java 11でビルドする場合は、JenkinsにJDKを追加します。
   - Jenkinsに管理者でログインします。
@@ -353,7 +392,7 @@
         ```
         https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
         ```
-      - アーカイブを展開するサブディレクトリ: ユニークなディレクトリを指定します。  
+      - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
         以下に例を示します。
         ```
         jdk-11.0.2
@@ -460,18 +499,18 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>

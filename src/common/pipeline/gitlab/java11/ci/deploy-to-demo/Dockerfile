@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:11.0-jre
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 EXPOSE 3333
