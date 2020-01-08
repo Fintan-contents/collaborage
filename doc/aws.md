@@ -81,17 +81,47 @@ AWS
         "Sid": "Stmt1504604285000",
         "Effect": "Allow",
         "Action": [
+          "sts:AssumeRole",
           "cloudwatch:PutMetricData",
           "ec2:CreateSnapshot",
+          "ec2:CreateSnapshots",
           "ec2:CreateTags",
           "ec2:DeleteSnapshot",
           "ec2:DescribeTags",
+          "ec2:DescribeInstances",
           "ec2:DescribeVolumes",
+          "ec2:DescribeSnapshots",
+          "ec2:EnableFastSnapshotRestores",
+          "ec2:DescribeFastSnapshotRestores",
+          "ec2:DisableFastSnapshotRestores",
+          "ec2:CopySnapshot",
           "sns:Publish"
         ],
         "Resource": [
           "*"
         ]
+      }
+    ]
+  }
+  ```
+- ロールの信頼されたエンティティに以下を指定してください。
+  - ec2.amazonaws.com
+  - dlm.amazonaws.com
+
+  設定には以下のjsonを使用してください。
+  ```
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": {
+          "Service": [
+            "ec2.amazonaws.com",
+            "dlm.amazonaws.com"
+          ]
+        },
+        "Action": "sts:AssumeRole"
       }
     ]
   }
