@@ -146,7 +146,7 @@
   - ID: root
   - パスワード: pass123-
   ```
-    $ docker exec -t subversion htpasswd -bc /etc/apache2/conf.d/davsvn.htpasswd root pass123-
+    $ docker exec -t subversion htpasswd -bc /etc/apache2/svn-davsvn-htpasswd/davsvn.htpasswd root pass123-
   ```
 - ユーザに権限を付与します。
   - `/data/svn/repo/conf/authz` を開きます。
@@ -359,6 +359,18 @@
   ```
   $ cd ~/nop/docker/ci/dockerfiles/maven-jdk-8-with-sshpass-on-docker/
   ```
+- プロキシ環境下の場合は、イメージのビルドのためにプロキシ設定を行います。
+  - Dockerfileを開きます。
+    ```
+    $ vi Dockerfile
+    ```
+  - `FROM` 命令の下に、 `/etc/apt/apt.conf` の生成を追記します。  
+    プロキシのURLは、プロキシ情報はネットワーク管理者に確認してください。  
+    以下に例を示します。
+    ```
+    FROM maven:3.6.2-jdk-8
+    RUN echo "Acquire::http::proxy \"http://26.247.64.251:3128\";\nAcquire::https::proxy \"http://26.247.64.251:3128\";" > /etc/apt/apt.conf
+    ```
 - GitLabのCIでビルドする際に使用するDockerイメージを作成します。
   ```
   $ docker build -t <CIサーバのIPアドレス>:19081/maven-jdk-8-with-sshpass-on-docker .

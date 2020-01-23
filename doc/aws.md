@@ -3,10 +3,13 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
+Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。
+
 - [アーキテクチャ](#アーキテクチャ)
 - [事前準備](#事前準備)
 - [インストール](#インストール)
 - [オペレーション](#オペレーション)
+- [マイグレーション](#マイグレーション)
 
 
 ## アーキテクチャ
@@ -127,9 +130,9 @@ AWS
   }
   ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
-  - CQサーバ： nop-dev-cq-0.2.1
-  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.2
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.2
+  - CQサーバ： nop-dev-cq-0.2.2
+  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.3
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.3
   - Demoサーバ： nop-inst-demo-0.1.4
 
 ### 作業PC
@@ -520,7 +523,7 @@ Collaborage固有のトピックである1と3について記載ます。
     2.190.3が使用しているバージョンです。
 
 
-#### バージョンアップを行う
+#### アプリの削除とバックアップ取得を行う
 アプリの停止を伴いますので、アプリを停止して差し支えないタイミングでお混ってください。
 
 - アプリを操作するディレクトリに移動します。
@@ -548,18 +551,122 @@ Collaborage固有のトピックである1と3について記載ます。
   $ sudo cp -r /data /data-bak
   ```
 
-- 「現在のDocker Imageのバージョンを調べる」で確認したdocker-compose.yml、DockerFileに記載されているバージョン番号を修正します。  
+#### バージョンアップを行う
+
+- アプリを操作するディレクトリに移動します。
+  - CQサーバの場合
+    ```
+    cd ~/nop/docker/cq/
+    ```
+  - CIサーバの場合
+    ```
+    cd ~/nop/docker/ci/
+    ```
+
+
+- 「現在のDocker Imageのバージョンを調べる」で確認したdocker-compose.yml、Dockerfileに記載されているバージョン番号を修正します。  
   例えば、jenkinsのバージョンを2.206に上げたい場合は、`~/nop/docker/ci/dockerfiles/jenkins` を以下のように修正します。
   ```
   FROM jenkins/jenkins:2.206
   (中略)
   ```
 - バージョンアップ時に必要な設定変更がある場合は、 `docker-compose.yml` の修正、または `/data` ディレクトリに存在する各アプリのデータファイルを修正して対応します。
+- Dockerfileを修正した場合は、イメージのビルドを行います。  
+  ```
+  $ docker-compose build --no-cache
+  ```
 - [CQサーバの設定を変更します](ami.md#cqサーバの設定を変更します) または、 [CIサーバの設定を変更します](ami.md#ciサーバの設定を変更します) の「アプリを作り直します」の手順を参照して、アプリを作り直します。
 - バージョンアップしたアプリの動作確認を行います。
+
+#### バックアップの削除を行う
 - ディレクトリのバックアップを消します。
   以下に例を示します。 
   ```
   $ rm -rf  ~/nop/docker-bak
   $ sudo rm -rf  /data-bak
   ```
+
+
+## マイグレーション
+
+### Java 11対応アプリケーションへのバージョンアップ
+
+#### CQサーバ 
+
+##### SonarQube
+
+- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CQサーバのバックアップを取得してください。
+
+
+- [バージョンアップを行う](#バージョンアップを行う)を参照して、SonarQubeのイメージのバージョンを `sonarqube:6.7.5-alpine` に上げてください。
+- ブラウザでアクセスします。
+    ```
+    <CQサーバのホスト>/sonarqube
+    ```
+- 管理者でログインします。
+  - 画面右上の「Log in」を選択します。
+    - Login: admin
+    - Password: pass123-
+- 画面上部の「Administration」＞「Marketplace」を選択します。
+- プラグインの一覧の中から「SonarJava」を探し、「Update to 5.9.2 (build 16552)」ボタンをクリックします。
+- ボタンが表示されていた個所に「Update Pending」と表示されるまで待ちます。
+- 画面上部に「Restart」が表示されていますので、クリックします。
+- しばらく待つとログイン画面が表示されるので、管理者でログインします。
+- プラグインの一覧の中から「SonarJava」を探し、「Update」ボタンが消えていることを確認します。
+
+
+- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CQサーバのバックアップを削除してください。
+
+#### CIサーバ 
+
+##### Jenkins
+- [作業場所を準備します](#作業場所を準備します)で用意した作業場所に、新しいCollaborageをクローンします。
+  ```
+  $ git clone https://github.com/Fintan-contents/collaborage.git collaborage-1.1.0
+  ```
+
+- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CIサーバのバックアップを取得してください。
+
+- Jenkinsのデータを削除します。  
+  中間のバージョンをスキップして、データを残したままバージョンアップを行うと失敗することがありますので、データを削除することを強くお勧めします。  
+  jenkinのビルド結果で保存しておきたいものがある場合は、あらかじめ `/data/jenkins/` の内容を退避しておいてください。  
+  ```
+  $ ssh -F .ssh/ssh.config nop-ci
+  $ sudo su -
+  $ sudo rm -rf /data/jenkins/*
+  ```
+
+- JenkinsのDockerfileの配置場所をCIサーバに作ります。
+  ```
+  $ ssh -F .ssh/ssh.config nop-ci
+  $ mkdir -p ~/nop/docker/ci/dockerfiles/jenkins
+  $ exit
+  ```
+- JenkinsのDockerfileをCIサーバに配置します。  
+  (このDockerfileは `jenkins/jenkins:2.190.3` を使用するように構成されています)
+  ```
+  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/ci-on-jenkins/dockerfiles/jenkins/Dockerfile nop-ci:/home/centos/nop/docker/ci/dockerfiles/jenkins/
+  ```
+- プロキシ環境下の場合は、[CIサーバの設定を変更します](ami.md#CIサーバの設定を変更します)の「プロキシ環境下でJenkinsを使用する場合」を参照して、設定を追記してください。
+- [バージョンアップを行う](#バージョンアップを行う)を参照して、Jenkinsのバージョンを上げてください。
+  - 先ほど配置したDockerfileを使用するようにdocker-compose.ymlを構成します。  
+    以下に該当箇所を記載します。
+    ```
+    (中略)
+      jenkins:
+        container_name: jenkins
+        build:
+          context: ./dockerfiles/jenkins
+          args:
+            http_proxy: $http_proxy
+            https_proxy: $https_proxy
+        restart: always
+    (中略)
+    ```
+
+- アプリの初期設定の[Jenkins](./init.md#jenkins)を参照して、設定を行います。
+- [jenkinsでのci追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。  
+  解説中にJava 11でビルドする場合の設定方法が記載されています。
+
+
+- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CIサーバのバックアップを削除してください。
