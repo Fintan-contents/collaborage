@@ -487,7 +487,7 @@ Collaborage固有のトピックである1と3について記載ます。
 - docker-compose.ymlを開きます。
   - CQサーバの場合
     ```
-    $ vi ~/nop/docker/ci/docker-compose.yml
+    $ vi ~/nop/docker/c/docker-compose.yml
     ```
   - CIサーバの場合
     ```
