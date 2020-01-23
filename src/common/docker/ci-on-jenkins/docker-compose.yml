@@ -26,6 +26,9 @@ services:
     container_name: jenkins
     build:
       context: ./dockerfiles/jenkins
+      args:
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
     restart: always
     privileged: true
     env_file: ./common.env
@@ -46,6 +49,11 @@ services:
     container_name: gitbucket
     build:
       context: ./dockerfiles/gitbucket
+      args:
+        HTTP_PROXY: $HTTP_PROXY
+        HTTPS_PROXY: $HTTPS_PROXY
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
     restart: always
     env_file: ./common.env
     environment:

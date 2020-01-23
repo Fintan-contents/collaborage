@@ -140,7 +140,7 @@
   - ID: nop
   - パスワード: pass456-  
   ```
-    $ docker exec -t subversion htpasswd -b /etc/apache2/conf.d/davsvn.htpasswd nop pass456-
+    $ docker exec -t subversion htpasswd -b /etc/apache2/svn-davsvn-htpasswd/davsvn.htpasswd nop pass456-
   ```
 - ユーザに権限を付与するため、グループに追加します。
   - `/data/svn/repo/conf/authz` を開きます。
@@ -166,9 +166,10 @@
 
 #### 開発メンバ
 
-- ブラウザでアクセスします。
+- 任意のSVNクライアント(TortoiseSVN等)でアクセスします。  
+  (ブラウザを使用した場合、プロトコルが強制的に変更されアクセスできないことがありますので、SVNクライアントの使用をお勧めします。)
   ```
-  <CQサーバのホスト>/svn
+  <CQサーバのホスト>/svn/repo/
   ```
 - 管理者が作成したユーザでログインします。
 

@@ -4,6 +4,8 @@ set -euo pipefail
 # for svn
 sudo mkdir -p /data/svn/
 sudo chmod 777 /data/svn
+sudo mkdir -p /data/svn-davsvn-htpasswd/
+sudo chmod 777 /data/svn-davsvn-htpasswd/
 
 # for redmine
 sudo mkdir -p /data/redmine-files

@@ -29,11 +29,17 @@ services:
     env_file: ./common.env
     build:
       context: ./dockerfiles/subversion
+      args:
+        HTTP_PROXY: $HTTP_PROXY
+        HTTPS_PROXY: $HTTPS_PROXY
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
     environment:
     - SVN_REPO=repo
     volumes:
       - /data/svn:/var/svn
-      - ./svn/etc/apache2/conf.d/:/etc/apache2/conf.d/
+      - ./svn/etc/apache2/conf.d:/etc/apache2/conf.d
+      - /data/svn-davsvn-htpasswd:/etc/apache2/svn-davsvn-htpasswd
 
   redmine:
     container_name: redmine
