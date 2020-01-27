@@ -591,12 +591,32 @@ Collaborage固有のトピックである1と3について記載ます。
 
 ### Java 11対応アプリケーションへのバージョンアップ
 
-#### CQサーバ 
+#### 事前準備
 
-##### SonarQube
+- [作業場所を準備します](#作業場所を準備します)で用意した作業場所に、新しいCollaborageをクローンします。
+  ```
+  $ git clone https://github.com/Fintan-contents/collaborage.git collaborage-1.1.0
+  ```
 
+#### CQサーバ
+
+##### バックアップ
 - [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CQサーバのバックアップを取得してください。
 
+##### Redmine
+
+Redmineが使用しているモジュールの新バージョンが2020年1月にリリースされました。  
+この影響で「アプリを停止して削除」した後、新しいモジュールを取得してしまい起動しないことがありますので、対策を行ったファイルをCQサーバに配置します。  
+
+
+- ファイルを配置します。
+  ```
+  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine-sub-uri.sh nop-cq:/home/centos/nop/docker/cq/
+  $ scp -F .ssh/ssh.config -r <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine nop-cq:/home/centos/nop/docker/cq/
+  ```
+
+
+##### SonarQube
 
 - [バージョンアップを行う](#バージョンアップを行う)を参照して、SonarQubeのイメージのバージョンを `sonarqube:6.7.5-alpine` に上げてください。
 - ブラウザでアクセスします。
@@ -615,18 +635,18 @@ Collaborage固有のトピックである1と3について記載ます。
 - プラグインの一覧の中から「SonarJava」を探し、「Update」ボタンが消えていることを確認します。
 
 
+##### バックアップの削除
+
 - [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CQサーバのバックアップを削除してください。
+
 
 #### CIサーバ 
 
-##### Jenkins
-- [作業場所を準備します](#作業場所を準備します)で用意した作業場所に、新しいCollaborageをクローンします。
-  ```
-  $ git clone https://github.com/Fintan-contents/collaborage.git collaborage-1.1.0
-  ```
+##### バックアップ
 
 - [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CIサーバのバックアップを取得してください。
 
+##### Jenkins
 - Jenkinsのデータを削除します。  
   中間のバージョンをスキップして、データを残したままバージョンアップを行うと失敗することがありますので、データを削除することを強くお勧めします。  
   jenkinのビルド結果で保存しておきたいものがある場合は、あらかじめ `/data/jenkins/` の内容を退避しておいてください。  
@@ -668,5 +688,6 @@ Collaborage固有のトピックである1と3について記載ます。
 - [jenkinsでのci追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。  
   解説中にJava 11でビルドする場合の設定方法が記載されています。
 
+##### バックアップの削除
 
 - [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CIサーバのバックアップを削除してください。
