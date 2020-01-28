@@ -10,7 +10,6 @@ aws sns publish --topic-arn "${AWS_SNS_TOPIC}" \
   --message "set-cron-after-try-command.shから送信しました。"
 
 /home/centos/nop/script/cron/send-ec2-data-to-cloudwatch.sh
-/home/centos/nop/script/cron/create-snapshot-of-ebs-data-volume.sh
 
 echo "## set cron on ${NOP_APP_ID}"
 

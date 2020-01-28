@@ -7,11 +7,13 @@
 
 - グループを追加します
   - [Redmineでのグループ追加](#redmineでのグループ追加)
+  - [Subversionでのグループ追加](#subversionでのグループ追加)
   - [GitBucketでのグループ追加](#gitbucketでのグループ追加)
   - [GitLabでのグループ追加](#gitlabでのグループ追加)
 - ユーザを追加します
   - [Redmineでのユーザ追加](#redmineでのユーザ追加)
   - [Rocket.Chatでのユーザ追加](#rocketchatでのユーザ追加)
+  - [Subversionでのユーザ追加](#subversionでのユーザ追加)
   - [GitBucketでのユーザ追加](#gitbucketでのユーザ追加)
   - [GitLabでのユーザ追加](#gitlabでのユーザ追加)
 - プロジェクト(またはリポジトリ)を追加します
@@ -20,7 +22,7 @@
   - [GitLabでのリポジトリ追加](#gitlabでのリポジトリ追加)
 - CIを追加します
   - [JenkinsでのCI追加](#jenkinsでのci追加)
-  - [ConcourseでのCI追加](#concourseでのci追加)
+  - [GitLabでのCI追加](#gitlabでのci追加)
 
 ## グループを追加します
 
@@ -33,6 +35,39 @@
 - 画面左上の「管理」＞「グループ」＞「新しいグループ」を選択します。
   - 名前: sample
 - 作成します。
+
+### Subversionでのグループ追加
+
+#### 管理者
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- グループを作成します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - グループを追加し、権限設定を行います。  
+    `[groups]` にグループ定義を行い、 `[/]` にリポジトリ全体に対する権限設定を記載します。
+    ```
+    (中略)
+    [groups]
+    (中略)
+    sample = 
+    (中略)
+    [/]
+    (中略)
+    @sample = rw
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
 
 
 ### GitBucketでのグループ追加
@@ -89,9 +124,54 @@
 #### 開発メンバ
 
 - 管理者が作成したユーザでログインします。
-- チャンネル「#jenkins」「#concourse」に参加します。
+- チャンネル「#jenkins」「#gitlab」に参加します。
   - 画面左の「その他のチャンネル...」を選択し、チャンネルを選択します。
     - 画面一番下の「参加」を選択します。
+
+### Subversionでのユーザ追加
+
+#### 管理者
+- SSHでアクセスします。
+  ```
+    $ ssh -F .ssh/ssh.config nop-cq
+  ```
+- ユーザを作成します。  
+   htpasswdコマンドの実行時、[アプリの初期設定 Subversion](init.md#subversion)と同じオプション(cオプション)を付けると、既存ユーザが消えます。注意してください。
+  - ID: nop
+  - パスワード: pass456-  
+  ```
+    $ docker exec -t subversion htpasswd -b /etc/apache2/svn-davsvn-htpasswd/davsvn.htpasswd nop pass456-
+  ```
+- ユーザに権限を付与するため、グループに追加します。
+  - `/data/svn/repo/conf/authz` を開きます。
+    ```
+    sudo vi /data/svn/repo/conf/authz
+    ```
+  - 作成したユーザをグループに追加します。
+    ```
+    (中略)
+    [groups]
+    (中略)
+    sample = nop
+    (中略)
+    ```
+- アプリを操作するディレクトリに移動します。
+  ```
+  cd /home/centos/nop/docker/cq
+  ```
+- Subversionを再起動します。
+  ```
+  docker-compose restart subversion
+  ```
+
+#### 開発メンバ
+
+- 任意のSVNクライアント(TortoiseSVN等)でアクセスします。  
+  (ブラウザを使用した場合、プロトコルが強制的に変更されアクセスできないことがありますので、SVNクライアントの使用をお勧めします。)
+  ```
+  <CQサーバのホスト>/svn/repo/
+  ```
+- 管理者が作成したユーザでログインします。
 
 
 ### GitBucketでのユーザ追加
@@ -126,11 +206,11 @@
     - Password/Password confirmationを指定します。
 - Save changesします。
 - グループに追加します。
-  - 画面左上の「ハンバーガーメニュー」(三本線)＞「Groups」＞「sample as Owner」＞「Members」タブを選択します。
-    - Add new member to sample: 作成したユーザ
-    - role permissions: Guest->Master
-      - 開発ユーザはDeveloperでよいのですが、初回のmasterリポジトリへのpushを行うにはMasterの必要があります。
-    - Add to groupします。
+  - 画面左上の「レンチ」(Admin area)アイコン＞「Overview」タブ＞「Groups」＞「sample」＞を選択します。
+    - Add user(s) to the group の上段のテキストボックス: 作成したユーザ
+    - Add user(s) to the group の下段のテキストボックス:: Guest->Maintainer
+      - 開発ユーザはDeveloperでよいのですが、初回のmasterリポジトリへのpushを行うにはMaintainerの必要があります。
+    - Add users to groupします。
 
 #### 開発メンバ
 
@@ -240,9 +320,14 @@
 
 - パイプラインを準備します。
   - 作業場所でパイプラインをnablarch-example-webにコピーします。
-    ```
-    $ cp -r pipeline/jenkins/* <nablarch-example-webへのパス>
-    ```
+    - Java 8でビルドする場合
+      ```
+      $ cp -r pipeline/jenkins/java8/* <nablarch-example-webへのパス>
+      ```
+    - Java 11でビルドする場合
+      ```
+      $ cp -r pipeline/jenkins/java11/* <nablarch-example-webへのパス>
+      ```
   - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
   - パイプラインのパラメータを変更します。
     ```
@@ -273,24 +358,46 @@
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>
       </plugin>
       ```
+  - Java11でビルドする場合は以下を参考に、pom.xmlとunit-test.xmlを修正します。  
+    https://nablarch.github.io/docs/LATEST/doc/application_framework/application_framework/blank_project/setup_blankProject/setup_Java11.html
   - pushします。
+- Java 11でビルドする場合は、JenkinsにJDKを追加します。
+  - Jenkinsに管理者でログインします。
+  - 「Jenkinsの管理」＞「Global Tool Configuration」を選択します。
+  - 「JDK追加」をクリックします。入力欄が表示されます。
+  - 「インストーラーの削除」をクリックし、「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
+  - 各項目を入力します。
+    - 名前: JDK11
+    - 自動インストール: on
+    - *.zip/*.tar.gz展開
+      - ラベル: 空欄
+      - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
+        以下に例を示します。
+        ```
+        https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+        ```
+      - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
+        以下に例を示します。
+        ```
+        jdk-11.0.2
+        ```
 - Jenkinsにジョブを作成します。
   - Jenkinsに管理者でログインします。
   - Multibranch Pipelineを作成します。
@@ -323,128 +430,97 @@
       - ログインID: 10000001
       - パスワード: pass123-
 
-
-### ConcourseでのCI追加
+### GitLabでのCI追加
 
 
 #### 管理者
 
+- ビルド結果の通知設定を行います。
+  - 管理者でログインします。
+  - 画面左上の「Gitlab」(アイコン)＞「sample/nablarch-example-web」を選択します
+  - 「Setting」＞「Integrations」を選択します
+    - URL: Rocket.ChatのWebhook URLのプロトコルをHTTPに、ホスト名をCQサーバのURLにしたもの。以下に例を示します。
+      ```
+      http://10.0.1.75/rocketchat/hooks/Pf9RdMSfer4xWGNvb/emn2DcnHcGyyzct9fiu8FWY6JWyxo4BQG6MCZo4xr6rKHjNP
+      ```
+    - Pipeline events: ON
+
 - パイプラインを準備します。
   - 作業場所でパイプラインをnablarch-example-webにコピーします。
-    ```
-    $ cp -r pipeline/concourse/* <nablarch-example-webへのパス>
-    ```
+    - Java 8でビルドする場合
+      ```
+      $ cp -r pipeline/gitlab/java8/* <nablarch-example-webへのパス>
+      ```
+    - Java 11でビルドする場合
+      ```
+      $ cp -r pipeline/gitlab/java11/* <nablarch-example-webへのパス>
+      ```
   - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
   - パイプラインのパラメータを変更します。
     ```
-    nablarch-example-web/ci/params.yml
+    nablarch-example-web/.gitlab-ci.yml
     ```
+    - イメージと環境変数を修正します。
+      ```
+      image: <CIサーバのホスト>:19081/<イメージ名>
+      (中略)
+      variables:
+        SONAR_HOST_URL: <SonarQubeのURL>
+        DEMO_HOST: <Demoサーバのホスト>
+        DEMO_PORT: <DemoサーバのSSHのポート番号>
+        DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
+        DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+      ```
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
-    - パラメータの設定は以下のような感じになります。
+    - こんな感じになります。
       ```
-      git-project-url: http://proxy/gitlab/sample/nablarch-example-web.git
-
-      docker-repo-host-port: nexus.repository:18444
-      docker-repo-username: admin
-      docker-repo-password: pass123-
-      
-      sonar-url: http://10.0.1.217/sonarqube
-      
-      chat-webhook-url: http://10.0.1.217/rocketchat/hooks/KMFduPo2KDqRLsAwp/RkL...
-      
-      demo-host: 10.0.1.121
-      demo-port: 22
-      demo-username: centos
-      demo-password: pass789-
+      image: 10.0.1.93:19081/maven-jdk-8-with-sshpass-on-docker
+      (中略)
+      variables:
+        SONAR_HOST_URL: 10.0.1.75
+        DEMO_HOST: 10.0.1.164
+        DEMO_PORT: 22
+        DEMO_USERNAME: centos
+        DEMO_PASSWORD: pass789-
       ```
-  - パイプラインで使うMavenの設定を変更します。
+  - パイプラインのパラメータを変更します。
     ```
     nablarch-example-web/ci/settings.xml
     ```
-    - Nexusのユーザ名/パスワードだけを変更します。
+    - MavenリポジトリのURLを修正します。
+      ```
+      <url>http://<CIサーバ>/nexus/repository/maven-public/</url>
+      ```
+    - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
+    - こんな感じになります。
+      ```
+      <url>http://10.0.1.9/nexus/repository/maven-public/</url>
+      ```
   - Executable Jarでデプロイするため、waitt-maven-pluginの設定を変更します。
     ```
     nablarch-example-web/pom.xml
     ```
-    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1に変更します。1.2.1以上であれば変更しなくても大丈夫です。
+    - waitt-maven-plugin/waitt-tomcat8のバージョン番号を1.2.1以上(Java 11を使用する場合は1.2.3以上)に変更します。1.2.1以上(1.2.3以上)であれば変更しなくても大丈夫です。
       ```
       <plugin>
         <groupId>net.unit8.waitt</groupId>
         <artifactId>waitt-maven-plugin</artifactId>
-        <version>1.2.1</version>
+        <version>1.2.3</version>
         <configuration>
           <servers>
             <server>
               <groupId>net.unit8.waitt.server</groupId>
               <artifactId>waitt-tomcat8</artifactId>
-              <version>1.2.1</version>
+              <version>1.2.3</version>
             </server>
           </servers>
         </configuration>
       </plugin>
       ```
-  - Mavenリポジトリにデプロイするため、distributionManagementの設定を追加します。
-    ```
-    nablarch-example-web/pom.xml
-    ```
-    - distributionManagementを追加します。このままコピペします。
-      ```
-      <distributionManagement>
-        <repository>
-          <id>private-release</id>
-          <url>http://proxy/nexus/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-          <id>private-snapshot</id>
-          <url>http://proxy/nexus/repository/maven-snapshots/</url>
-        </snapshotRepository>
-      </distributionManagement>
-      ```
-    - 一番外側のprojectタグの閉じタグの直前に入れておけば大丈夫です。
+  - Java11でビルドする場合は以下を参考に、pom.xmlとunit-test.xmlを修正します。  
+    https://nablarch.github.io/docs/LATEST/doc/application_framework/application_framework/blank_project/setup_blankProject/setup_Java11.html
   - pushします。
-- Concouseにパイプラインを設定します。
-  - Concourseへのパイプライン設定はflyコマンドで行います。
-  - Concourseにアクセスしてツールをダウンロードします。
-    - インストールしたConcourseのトップページにアクセスします。
-    - 作業マシンのOSと同じアイコン(画面中央にあります)を選択して、ツールをダウンロードします。
-    - ツールにパスを通すか、nablarch-example-web/ciに置いて直接実行して使います。
-  - flyコマンドでConcouseにログインします。パスを通してない場合は「fly」→「fly.exe」で実行してください。
-    ```
-    $ cd <nablarch-example-web/ciへのパス>
-    $ fly -t main login -c <ConcourseのURL> -k
-    ```
-    - ConcourseのURLはブラウザでアクセスする場合と同じものを指定します。
-    - username/passwordが聞かれるので、docker-composeの定義ファイルに指定したものを入力します。
-      - 「target saved」と表示されればログイン成功です。
-      - こんな感じになります。
-        ```
-        $ fly -t main login -c https://nop-ci.adc-tis.com/ -k
-        logging in to team 'main'
-        
-        username: admin
-        admin
-        password: pass123-
-        
-        target saved
-        ```
-  - flyコマンドでパイプラインを設定します。
-    ```
-    $ fly -t main sp -p nablarch-example-web -c pipeline.yml -l params.yml
-    ```
-    - 「apply configuration? [yN]:」と聞かれるので「y」と答えます。
-    - パイプラインを変更した場合はこのコマンドで更新します。
-  - ブラウザでConcourseにアクセスしてCIを実行します。
-    - Concourseがパイプラインを検知して、画面にパイプラインが表示されます。
-    - 表示されない場合は画面を更新してください。
-    - はじめは一時停止状態なので、画面左上の「メニュー」＞nablarch-example-webの「再生」アイコンを選択します。
-      - ![ConcourseのUnpause](images/concourse-unpause.png)
-  - 初回は大量の依存モジュールを落としてくるため、少し時間（5分～10分ぐらい）がかかります。
-  - 「deploy-to-demo-develop」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
-    ```
-    <DEMOサーバのホスト>/
-    ```
-    - ログインID: 10000001
-    - パスワード: pass123-
+  - GitLabが変更を検知し、ビルドが実行されます。
 
 これで開発準備は終わりです！
 お疲れさまでしたー

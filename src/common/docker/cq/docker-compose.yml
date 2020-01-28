@@ -8,7 +8,7 @@ services:
     restart: always
     env_file: ./common.env
     environment:
-      no_proxy: redmine,rocketchat,sonarqube
+      no_proxy: redmine,rocketchat,sonarqube,subversion
     ports:
       - "80:80"
     volumes:
@@ -17,10 +17,29 @@ services:
       - redmine
       - rocketchat
       - sonarqube
+      - subversion
     logging:
       options:
         max-size: "10m"
         max-file: "10"
+
+  subversion:
+    container_name: subversion
+    restart: always
+    env_file: ./common.env
+    build:
+      context: ./dockerfiles/subversion
+      args:
+        HTTP_PROXY: $HTTP_PROXY
+        HTTPS_PROXY: $HTTPS_PROXY
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
+    environment:
+    - SVN_REPO=repo
+    volumes:
+      - /data/svn:/var/svn
+      - ./svn/etc/apache2/conf.d:/etc/apache2/conf.d
+      - /data/svn-davsvn-htpasswd:/etc/apache2/svn-davsvn-htpasswd
 
   redmine:
     container_name: redmine
@@ -59,12 +78,13 @@ services:
 
   rocketchat:
     container_name: rocketchat
-    image: rocket.chat:0.57.3
+    image: rocket.chat:2.0.0
     restart: always
     env_file: ./common.env
     environment:
       MONGO_URL: mongodb://rocketchat-db:27017/rocketchat
-      ROOT_URL: http://localhost/rocketchat
+      MONGO_OPLOG_URL: mongodb://rocketchat-db:27017/local
+      ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
     volumes:
       - /data/rocketchat:/app/uploads
     depends_on:
@@ -76,10 +96,10 @@ services:
 
   rocketchat-db:
     container_name: rocketchat-db
-    image: mongo:3.2.15
+    image: mongo:3.6.9
     restart: always
     env_file: ./common.env
-    command: mongod --smallfiles
+    command: mongod --smallfiles --oplogSize 128 --replSet rs0 --storageEngine=mmapv1
     volumes:
       - /data/rocketchat-db:/data/db
     logging:
@@ -87,9 +107,17 @@ services:
         max-size: "10m"
         max-file: "10"
 
+  # this container's job is just run the command to initialize the replica set.
+  # it will run the command and remove himself (it will not stay running)
+  mongo-init-replica:
+    image: mongo:3.6.9
+    command: 'bash -c "for i in `seq 1 30`; do mongo rocketchat-db/rocketchat --eval \"rs.initiate({ _id: ''rs0'', members: [ { _id: 0, host: ''localhost:27017'' } ]})\" && s=$$? && break || s=$$?; echo \"Tried $$i times. Waiting 5 secs...\"; sleep 5; done; (exit $$s)"'
+    depends_on:
+      - rocketchat-db
+
   sonarqube:
     container_name: sonarqube
-    image: sonarqube:6.7.4-alpine
+    image: sonarqube:6.7.5-alpine
     restart: always
     env_file: ./common.env
     environment:

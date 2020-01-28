@@ -24,7 +24,11 @@ services:
 
   jenkins:
     container_name: jenkins
-    image: kiyohome/jenkins-with-sshpass:lts
+    build:
+      context: ./dockerfiles/jenkins
+      args:
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
     restart: always
     privileged: true
     env_file: ./common.env
@@ -43,7 +47,13 @@ services:
 
   gitbucket:
     container_name: gitbucket
-    image: f99aq8ove/gitbucket:alpine
+    build:
+      context: ./dockerfiles/gitbucket
+      args:
+        HTTP_PROXY: $HTTP_PROXY
+        HTTPS_PROXY: $HTTPS_PROXY
+        http_proxy: $http_proxy
+        https_proxy: $https_proxy
     restart: always
     env_file: ./common.env
     environment:
@@ -81,14 +91,15 @@ services:
 
   nexus.repository:
     container_name: nexus.repository
-    image: kiyohome/nexus-with-ssl:3.3.2
+    build:
+      context: ./dockerfiles/nexus
     restart: always
     env_file: ./common.env
     environment:
       NEXUS_CONTEXT: nexus
     ports:
-      - "18081:18081"
-      - "18443:18443"
+      - "8081:8081"
+      - "8443:8443"
     volumes:
       - /data/nexus:/nexus-data
     logging:

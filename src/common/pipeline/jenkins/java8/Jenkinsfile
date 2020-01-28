@@ -1,0 +1,71 @@
+pipeline {
+  agent any
+  triggers {
+    pollSCM('*/1 * * * *')
+  }
+  tools {
+    maven 'mvn3'
+  }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '3'))
+  }
+  environment {
+    SONAR_HOST_URL = '<SonarQubeのURL>'
+    DEMO_HOST = '<Demoサーバのホスト>'
+    DEMO_PORT = '<DemoサーバのSSHのポート番号>'
+    DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
+    DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
+  }
+  stages {
+    stage('Unit test') {
+      steps {
+        echo 'Unit test'
+        sh 'mvn -P gsp generate-resources -s ci/settings.xml'
+        sh 'mvn jacoco:prepare-agent test -s ci/settings.xml'
+      }
+      post {
+        always { junit 'target/surefire-reports/**/*.xml' }
+        success { rocketSend message: 'Unit test', emoji: ':blush:' }
+        failure { rocketSend message: 'Unit test', emoji: ':sob:' }
+      }
+    }
+    stage('Code analysis') {
+      steps {
+        echo 'Code analysis'
+        sh 'mvn sonar:sonar -s ci/settings.xml -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.branch=${BRANCH_NAME}'
+      }
+      post {
+        success { rocketSend message: 'Code analysis', emoji: ':blush:' }
+        failure { rocketSend message: 'Code analysis', emoji: ':sob:' }
+      }
+    }
+    stage('Deploy to demo') {
+      when {
+        branch 'develop'
+      }
+      steps {
+        echo 'Create executable jar'
+        sh 'mvn -P gsp generate-resources -s ci/settings.xml'
+        sh 'mvn clean compile -s ci/settings.xml'
+        sh 'mvn waitt:jar -s ci/settings.xml'
+        echo 'Create app resources'
+        sh 'mkdir -p target/app'
+        sh 'cp $(find target/ -name *standalone.jar) target/app/'
+        sh 'cp -r src/main/webapp/ target/app/'
+        sh 'cp -r h2/ target/app/'
+        sh 'cp ci/deploy-to-demo/* target/app/'
+        sh 'ls -l target/app/'
+        echo 'Send app to demo'
+        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "mkdir -p app"'
+        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && rm -rf *"'
+        sh 'sshpass -p ${DEMO_PASSWORD} scp -P ${DEMO_PORT} -oStrictHostKeyChecking=no -r target/app/ ${DEMO_USERNAME}@${DEMO_HOST}:~/'
+        echo 'Start app'
+        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && sh up.sh"'
+      }
+      post {
+        success { rocketSend message: 'Deploy to demo', emoji: ':blush:' }
+        failure { rocketSend message: 'Deploy to demo', emoji: ':sob:' }
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [ $# -ne 3 ]; then
-  echo "usage: ./init-workplace.sh <path to workplace> <target cloud(aws)> <target ci(jenkins|concourse)>"
+  echo "usage: ./init-workplace.sh <path to workplace> <target cloud(aws)> <target ci(jenkins|gitlab)>"
   exit 1
 fi
 

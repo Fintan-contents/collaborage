@@ -1,0 +1,104 @@
+version: '3'
+
+services:
+
+  proxy:
+    container_name: proxy
+    image: httpd:2.2.34-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      no_proxy: gitlab,nexus.repository
+    ports:
+      - "80:80"
+    volumes:
+      - ./httpd.conf:/usr/local/apache2/conf/httpd.conf
+    depends_on:
+      - gitlab
+      - nexus.repository
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  gitlab:
+    container_name: gitlab
+    image: gitlab/gitlab-ce:12.4.2-ce.0
+    restart: always
+    volumes:
+      - /data/gitlab/data:/var/opt/gitlab
+      - /data/gitlab/config:/etc/gitlab
+    depends_on:
+      - gitlab-db
+    env_file: ./common.env
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '<ブラウザからGitLabにアクセスする場合のURL>'
+        gitlab_rails['time_zone'] = 'Tokyo'
+        gitlab_rails['db_adapter'] = 'postgresql'
+        gitlab_rails['db_host'] = 'gitlab-db'
+        gitlab_rails['db_port'] = 5432
+        gitlab_rails['db_database'] = 'gitlab'
+        gitlab_rails['db_username'] = 'gitlab'
+        gitlab_rails['db_password'] = 'gitlab'
+        gitlab_monitor['enable'] = false
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+        nginx['proxy_set_headers'] = {
+          "X-Forwarded-Proto" => "https",
+          "X-Forwarded-Ssl" => "on"
+        }
+      no_proxy: proxy
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  gitlab-db:
+    container_name: gitlab-db
+    image: postgres:9.5.7-alpine
+    restart: always
+    env_file: ./common.env
+    environment:
+      POSTGRES_DB: gitlab
+      POSTGRES_USER: gitlab
+      POSTGRES_PASSWORD: gitlab
+    volumes:
+      - /data/gitlab-db:/var/lib/postgresql/data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
+
+  gitlab-runner:
+    container_name: gitlab-runner
+    image: gitlab/gitlab-runner:ubuntu-v12.4.1
+    restart: always
+    volumes:
+      - ~/.docker/:/root/.docker/
+      - /data/gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  nexus.repository:
+    container_name: nexus.repository
+    build:
+      context: ./dockerfiles/nexus
+    restart: always
+    env_file: ./common.env
+    environment:
+      NEXUS_CONTEXT: nexus
+    ports:
+      - "8081:8081"
+      - "8443:8443"
+      # docker-group-repo (http)
+      - "18081:18081"
+      # docker-group-repo (https)
+      - "18444:18444"
+      # docker-hosted-repo (http)
+      - "19081:19081"
+    volumes:
+      - /data/nexus:/nexus-data
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "10"
