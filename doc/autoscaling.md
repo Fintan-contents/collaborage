@@ -306,6 +306,13 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
         - amazonec2-request-spot-instance: スポットインスタンスの利用設定
         - engine-insecure-registry: Nexus.Repositoryからdockerイメージをpullする際httpsから除外するIPを設定
     - 設定例
+      - 以下の項目は各環境にあわせて読み替えてください。
+        - ACCESS_KEY
+        - SECRET_KEY
+        - VPC_ID
+        - SUBNET_ID,
+        - SECURITY_GROUP_NAME
+        - ROLE_NAME
       ```
       （略）
       [runners.cache]
@@ -324,12 +331,12 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
           "amazonec2-instance-type=t2.micro",
           "amazonec2-region=ap-northeast-1",
           "amazonec2-zone=a",
-          "amazonec2-vpc-id=VPC_ID
+          "amazonec2-vpc-id=VPC_ID",
           "amazonec2-subnet-id=SUBNER_ID",
           "amazonec2-use-private-address=true",
           "amazonec2-tags=runner-manager-name,gitlab-aws-autoscaler,gitlab,true,gitlab-runner-autoscale,true",
           "amazonec2-security-group=SECURITY_GROUP_NAME",
-          "amazonec2-iam-instance-profile=RORE_NAME",
+          "amazonec2-iam-instance-profile=ROLE_NAME",
           "amazonec2-security-group-readonly=true",
           "amazonec2-request-spot-instance=true",
           "engine-insecure-registry=192.0.2.3:19081",
