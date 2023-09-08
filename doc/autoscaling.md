@@ -194,19 +194,10 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
       ```
       gitlab-runner:
         container_name: gitlab-runner
-        image: gitlab/gitlab-runner:ubuntu-v12.4.1
+        image: gitlab/gitlab-runner:ubuntu-v16.1.0
         restart: always
         env_file: ./common.env
       ```
-
-      - 設定例
-        ```
-        gitlab-runner:
-          container_name: gitlab-runner
-          image: gitlab/gitlab-runner:ubuntu-v12.4.1
-          restart: always
-          env_file: ./common.env
-        ```
   - アプリを作り直します。
     - アプリを操作するディレクトリに移動します。
       ```
@@ -257,18 +248,36 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
   - アクセスキーとシークレットアクセスキーが作成されるので控えておきます。
 
 # サーバのポートを開放します
-- 各ポートが開放済の場合は対応不要です。
-- CIサーバの開放ポート
-  - 19081
+インスタンスに設定するセキュリティグループのインバウンドルールを追加して、ポートを開放します。   
+すでにインバウンドルールが設定されている場合は対応不要です。
+- Autoscalingで起動されたインスタンスに設定するセキュリティグループに以下のインバウンドルールを追加します。
+  - セキュリティグループが存在しない場合は作成してください。
+  - 以降の手順のconfig.tomlで指定するセキュリティグループには、このセキュリティグループを指定します。
+  - ポート：2376
+    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
+    - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
+    - 設定値
+      - タイプ: カスタムTCP
+      - ポート範囲：2376
+      - リソースタイプ: カスタム
+      - ソース: CIサーバのセキュリティグループ
+  - ポート：22
+    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
+    - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
+    - 設定値
+      - タイプ: カスタムTCP
+      - ポート範囲：2376
+      - リソースタイプ: カスタム
+      - ソース: CIサーバのセキュリティグループ
+- CIサーバのセキュリティグループに以下のインバウンドルールを追加します。
+  - ポート：19081
     - CIサーバのnexusからdockerイメージ取得する際に利用します。
     - Autoscalingで起動されたインスタンスからCIサーバへの接続が可能となるように設定します。
-- Autoscalingで起動されたインスタンスの開放ポート
-  - 2376
-    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
-    - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
-  - 22
-    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
-    - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
+    - 設定値
+      - タイプ: カスタムTCP
+      - ポート範囲：19081
+      - リソースタイプ: カスタム
+      - ソース: Autoscalingで起動されたインスタンスのセキュリティグループ
 
 # config.tomlを修正します
 - Autoscalingを有効にするため、config.toml を修正します。
@@ -323,7 +332,7 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
             - 未設定の場合はubuntu 20.04（ami-0a3eb6ca097b78895）が利用されます。
             - プロキシ環境では作成したAMIのIDを設定します。
         - amazonec2-security-group:
-          - [サーバのポートを開放します](#サーバのポートを開放します)で追加したポート設定が適用されるセキュリティグループを指定します。
+          - [サーバのポートを開放します](#サーバのポートを開放します)で作成したセキュリティグループを指定します。
         - amazonec2-security-group-readonly:
           - セキュリティグループの上書き設定です。
           - 未設定の場合セキュリティグループの上書きを行ってしまうので、必ずtrueを設定してください。
