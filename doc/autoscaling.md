@@ -21,7 +21,8 @@ EC2インスタンスの作成・削除の制御はGitLab Runnerが行います�
 
 # Collaborage1.1環境をご利用の場合
 ## GitLabのバージョンアップをします
-Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runner:ubuntu-v12.5.0、環境変数NO_PROXYのブロック指定ははgitlab-runner:ubuntu-v12.6.0から利用可能となるため、12.6以降のバージョンに更新します。
+GitLab、GitLab Runnerのバージョンを12.6.0以降に更新します。  
+Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`はGitLab Runner 12.5.0、環境変数NO_PROXYのブロック指定はGitLab Runner 12.6.0から利用可能となるためです。
 - docker-compose.ymlを編集します。
   ```
   $ vi ~/nop/docker/ci/docker-compose.yml
@@ -152,7 +153,8 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
   ```
 ### AMIを作成します
 - 出来上がったインスタンスをもとにプロキシ設定がされたAMIを保存します。
-  - AMIの保存方法は[アプリの復元](aws.md#アプリの復元)を参照して作業します。
+  - AWSマネジメントコンソールでEC2にアクセスします。
+  - インスタンスを選択＞「アクション」＞「イメージ」＞「イメージの作成」を選択して、イメージを作成します。
 
 ## GitLab Runnerのプロキシの設定を修正します
 - プロキシ環境下の場合は、GitLab Runnerのプロキシの設定を変更します。
@@ -160,19 +162,41 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
     ```
     $ cd ~/nop/docker/ci/
     ```
+  - common.envを修正します。
+    ```
+    $ vi ~/nop/docker/ci/common.env
+    ```
+    - common.envにNO_PROXYの設定を追加します。
+      ※common.envにはすでにプロキシ設定が記載されている想定です。
+      ```
+      HTTP_PROXY=http://<プロキシサーバのIP>:<ポート番号>
+      HTTPS_PROXY=http://<プロキシサーバのIP>:<ポート番号>
+      http_proxy=http://<プロキシサーバのIP>:<ポート番号>
+      https_proxy=http://<プロキシサーバのIP>:<ポート番号>
+      NO_PROXY: <同一サブネットのIP範囲>
+      TZ=Asia/Tokyo
+      ``` 
+      - 設定例
+        ```
+        HTTP_PROXY=http://192.0.2.1:3128
+        HTTPS_PROXY=http://192.0.2.1:3128
+        http_proxy=http://192.0.2.1:3128
+        https_proxy=http://192.0.2.1:3128
+        NO_PROXY: 192.0.0.0/16
+        TZ=Asia/Tokyo 
+        ```
+
   - docker-compose.ymlを修正します。
     ```
     $ vi ~/nop/docker/ci/docker-compose.yml
     ```
-    - GitLab Runnerにenv_file、environmentの設定を追加します。
+    - GitLab Runnerにenv_fileの設定を追加します。
       ```
       gitlab-runner:
         container_name: gitlab-runner
         image: gitlab/gitlab-runner:ubuntu-v12.4.1
         restart: always
         env_file: ./common.env
-        environment:
-          NO_PROXY: <同一サブネットのIP範囲>
       ```
 
       - 設定例
@@ -182,8 +206,6 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
           image: gitlab/gitlab-runner:ubuntu-v12.4.1
           restart: always
           env_file: ./common.env
-          environment:
-            NO_PROXY: 192.0.0.0/16
         ```
   - アプリを作り直します。
     - アプリを操作するディレクトリに移動します。
@@ -275,15 +297,16 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
         "amazonec2-secret-key=<取得したシークレットアクセスキー>",
         "amazonec2-ami=<利用するAMIのID>",
         "amazonec2-instance-type=t2.micro",
-        "amazonec2-region=<collaborage環境のregion>",
-        "amazonec2-zone=<collaborage環境のregion>",
-        "amazonec2-vpc-id=<collaborage環境のVPCのID>",
-        "amazonec2-subnet-id=<collaborage環境のsubnetのID>",
+        "amazonec2-region=<自身の環境のregion>",
+        "amazonec2-zone=<自身の環境のAZ>",
+        "amazonec2-vpc-id=<自身の環境のVPCのID>",
+        "amazonec2-subnet-id=<自身の環境のsubnetのID>",
+        "amazonec2-private-address-only=true",
         "amazonec2-use-private-address=true",
         "amazonec2-tags=runner-manager-name,gitlab-aws-autoscaler,gitlab,true,gitlab-runner-autoscale,true",
-        "amazonec2-security-group=<collaborage環境のセキュリティグループ名>",
+        "amazonec2-security-group=<自身の環境のセキュリティグループ名>",
         "amazonec2-security-group-readonly=true",
-        "amazonec2-iam-instance-profile=<collaborage環境のロール名>",
+        "amazonec2-iam-instance-profile=<自身の環境のロール名>",
         "amazonec2-request-spot-instance=true",
         "engine-insecure-registry=<CIサーバのIP>:19081",
     ]
@@ -297,22 +320,16 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
         - amazonec2-tags: インスタンスに設定するタグ（key1,value1,key2,value2形式）
         - amazonec2-ami: 
           - Autoscalingに利用するインスタンスのAMIは任意のものを指定可能なため、利用するAMIのIDを設定します。
-            - 未設定の場合はGitLab RunnerのデフォルトのAMIが設定されますが、2023年9月時点では起動時にエラーが発生するため特定のAMIを設定してください。
-              - 動作検証は ubuntu 20.04（ami-0a3eb6ca097b78895）のAMIを利用して行っているため、このAMIの利用を推奨します。
+            - 未設定の場合はubuntu 20.04（ami-0a3eb6ca097b78895）が利用されます。
             - プロキシ環境では作成したAMIのIDを設定します。
+        - amazonec2-security-group:
+          - [サーバのポートを開放します](#サーバのポートを開放します)で追加したポート設定が適用されるセキュリティグループを指定します。
         - amazonec2-security-group-readonly:
           - セキュリティグループの上書き設定です。
           - 未設定の場合セキュリティグループの上書きを行ってしまうので、必ずtrueを設定してください。
         - amazonec2-request-spot-instance: スポットインスタンスの利用設定
         - engine-insecure-registry: Nexus.Repositoryからdockerイメージをpullする際httpsから除外するIPを設定
     - 設定例
-      - 以下の項目は各環境にあわせて読み替えてください。
-        - ACCESS_KEY
-        - SECRET_KEY
-        - VPC_ID
-        - SUBNET_ID,
-        - SECURITY_GROUP_NAME
-        - ROLE_NAME
       ```
       （略）
       [runners.cache]
@@ -333,6 +350,7 @@ Autoscalingのプロパティ`--amazonec2-security-group-readonly`はgitlab-runn
           "amazonec2-zone=a",
           "amazonec2-vpc-id=VPC_ID",
           "amazonec2-subnet-id=SUBNER_ID",
+          "amazonec2-private-address-only=true",
           "amazonec2-use-private-address=true",
           "amazonec2-tags=runner-manager-name,gitlab-aws-autoscaler,gitlab,true,gitlab-runner-autoscale,true",
           "amazonec2-security-group=SECURITY_GROUP_NAME",
