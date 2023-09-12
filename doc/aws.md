@@ -3,14 +3,15 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
-Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。
+Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。  
+GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAutoscaling」に進んでください。
 
 - [アーキテクチャ](#アーキテクチャ)
 - [事前準備](#事前準備)
 - [インストール](#インストール)
 - [オペレーション](#オペレーション)
-- [マイグレーション](#マイグレーション)
-
+- [マイグレーション](migration.md)
+- [GitLab RunnerのAutoscaling](autoscaling.md)
 
 ## アーキテクチャ
 
@@ -165,10 +166,10 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
     }
     ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
-  - CQサーバ： nop-dev-cq-0.2.2
-  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.3
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.3
-  - Demoサーバ： nop-inst-demo-0.1.4
+  - CQサーバ： nop-dev-cq-2.0.0
+  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-2.0.0
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.0.0
+  - Demoサーバ： nop-inst-demo-2.0.0
 
 ### 作業PC
 
@@ -619,109 +620,3 @@ Collaborage固有のトピックである1と3について記載ます。
   $ rm -rf  ~/nop/docker-bak
   $ sudo rm -rf  /data-bak
   ```
-
-
-## マイグレーション
-
-### Java 11対応アプリケーションへのバージョンアップ
-
-#### 事前準備
-
-- [作業場所を準備します](#作業場所を準備します)で用意した作業場所に、新しいCollaborageをクローンします。
-  ```
-  $ git clone https://github.com/Fintan-contents/collaborage.git collaborage-1.1.0
-  ```
-
-#### CQサーバ
-
-##### バックアップ
-- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CQサーバのバックアップを取得してください。
-
-##### Redmine
-
-Redmineが使用しているモジュールの新バージョンが2020年1月にリリースされました。  
-この影響で「アプリを停止して削除」した後、新しいモジュールを取得してしまい起動しないことがありますので、対策を行ったファイルをCQサーバに配置します。  
-
-
-- ファイルを配置します。
-  ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine-sub-uri.sh nop-cq:/home/ec2-user/nop/docker/cq/
-  $ scp -F .ssh/ssh.config -r <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine nop-cq:/home/ec2-user/nop/docker/cq/
-  ```
-
-
-##### SonarQube
-
-- [バージョンアップを行う](#バージョンアップを行う)を参照して、SonarQubeのイメージのバージョンを `sonarqube:6.7.5-alpine` に上げてください。
-- ブラウザでアクセスします。
-    ```
-    <CQサーバのホスト>/sonarqube
-    ```
-- 管理者でログインします。
-  - 画面右上の「Log in」を選択します。
-    - Login: admin
-    - Password: pass123-
-- 画面上部の「Administration」＞「Marketplace」を選択します。
-- プラグインの一覧の中から「SonarJava」を探し、「Update to 5.9.2 (build 16552)」ボタンをクリックします。
-- ボタンが表示されていた個所に「Update Pending」と表示されるまで待ちます。
-- 画面上部に「Restart」が表示されていますので、クリックします。
-- しばらく待つとログイン画面が表示されるので、管理者でログインします。
-- プラグインの一覧の中から「SonarJava」を探し、「Update」ボタンが消えていることを確認します。
-
-
-##### バックアップの削除
-
-- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CQサーバのバックアップを削除してください。
-
-
-#### CIサーバ 
-
-##### バックアップ
-
-- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CIサーバのバックアップを取得してください。
-
-##### Jenkins
-- Jenkinsのデータを削除します。  
-  中間のバージョンをスキップして、データを残したままバージョンアップを行うと失敗することがありますので、データを削除することを強くお勧めします。  
-  jenkinのビルド結果で保存しておきたいものがある場合は、あらかじめ `/data/jenkins/` の内容を退避しておいてください。  
-  ```
-  $ ssh -F .ssh/ssh.config nop-ci
-  $ sudo su -
-  $ sudo rm -rf /data/jenkins/*
-  ```
-
-- JenkinsのDockerfileの配置場所をCIサーバに作ります。
-  ```
-  $ ssh -F .ssh/ssh.config nop-ci
-  $ mkdir -p ~/nop/docker/ci/dockerfiles/jenkins
-  $ exit
-  ```
-- JenkinsのDockerfileをCIサーバに配置します。  
-  (このDockerfileは `jenkins/jenkins:2.190.3` を使用するように構成されています)
-  ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/ci-on-jenkins/dockerfiles/jenkins/Dockerfile nop-ci:/home/ec2-user/nop/docker/ci/dockerfiles/jenkins/
-  ```
-- プロキシ環境下の場合は、[CIサーバの設定を変更します](ami.md#CIサーバの設定を変更します)の「プロキシ環境下でJenkinsを使用する場合」を参照して、設定を追記してください。
-- [バージョンアップを行う](#バージョンアップを行う)を参照して、Jenkinsのバージョンを上げてください。
-  - 先ほど配置したDockerfileを使用するようにdocker-compose.ymlを構成します。  
-    以下に該当箇所を記載します。
-    ```
-    (中略)
-      jenkins:
-        container_name: jenkins
-        build:
-          context: ./dockerfiles/jenkins
-          args:
-            http_proxy: $http_proxy
-            https_proxy: $https_proxy
-        restart: always
-    (中略)
-    ```
-
-- アプリの初期設定の[Jenkins](./init.md#jenkins)を参照して、設定を行います。
-- [jenkinsでのci追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。  
-  解説中にJava 11でビルドする場合の設定方法が記載されています。
-
-##### バックアップの削除
-
-- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CIサーバのバックアップを削除してください。
