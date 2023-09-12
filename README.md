@@ -39,27 +39,15 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
 
 できあがる環境での各アプリのバージョンです。
 
-| サーバ | アプリ                | バージョン　                              | 
-|:----|:-------------------|:------------------------------------|
-| 共通  | docker             | 20.10.23                            |
-|     | docker compose     | v2.18.1                             | 
-| cq  | proxy              | httpd:2.4.57-alpine                 | 
-|     | subversion         | alpine:3.18.0<br/>subversion:1.14.2 | 
-|     | redmine            | redmine:4.2.10-passenger            | 
-|     | redmine-db         | postgres:15.3-alpine                | 
-|     | rocketchat         | rocket.chat:5.4.9                   | 
-|     | rocketchat-db      | mongo:6.0.6                         | 
-|     | mongo-init-replica | mongo:6.0.6                         | 
-|     | sonarqube          | sonarqube:10.1.0-community          | 
-|     | sonarqube-db       | postgres:15.3-alpine                | 
-| ci  | proxy              | httpd:2.4.57-alpine                 | 
-|     | jenkins            | jenkins/jenkins:2.401.1             | 
-|     | gitbucket          | gitbucket/gitbucket:4.38.4          | 
-|     | gitbucket-db       | postgres:15.3-alpine                | 
-|     | gitlab             | gitlab/gitlab-ce:16.0.1-ce.0        | 
-|     | gitlab-db          | postgres:15.3-alpine                | 
-|     | gitlab-runner      | gitlab/gitlab-runner:ubuntu-v16.1.0 | 
-|     | nexus.repository   | sonatype/nexus3:3.55.0              | 
+| サーバ | アプリ                          | バージョン　  | 
+|:----|:-----------------------------|:--------|
+| CQ  | Redmine                      | 4.2.10  | 
+|     | Rocket.Chat                  | 5.4.9   | 
+|     | SonarQube(Community Edition) | 10.1.0  | 
+| CI  | Jenkins                      | 2.401.1 | 
+|     | GitBucket                    | 4.38.4  | 
+|     | GitLab (Community Edition)   | 16.0.1  | 
+|     | Nexus Repository Manager 3   | 3.55.0  | 
 
 
 ## 何ができるの？

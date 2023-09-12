@@ -6,33 +6,33 @@
 # 前提
 - 各ミドルウェアのマイグレーション前後のバージョンは下記を想定しています。
   
-  | サーバ | コンテナ　              | 変更前　                                        | 変更後　                                | 移行形態             |
-  |:----|:-------------------|:--------------------------------------------|:------------------------------------|:-----------------| 
-  | 共通  | docker             |                                             | 20.10.23                            | -                |
-  |     | docker compose     | 1.14.0                                      | v2.18.1                             | -                |
-  | cq  | proxy              | httpd:2.2.34-alpine                         | httpd:2.4.57-alpine                 | 移行対象データなし        |
-  |     | subversion         | alpine:3.10.3<br/>subversion:1.12.2         | alpine:3.18.0<br/>subversion:1.14.2 | 完全移行             |
-  |     | redmine            | redmine:3.3.4-passenger                     | redmine:4.2.10-passenger            | 一部移行             |
-  |     | redmine-db         | postgres:9.5.7-alpine                       | postgres:15.3-alpine                | 完全移行             |
-  |     | rocketchat         | rocket.chat:2.0.0                           | rocket.chat:5.4.9                   | -　               |
-  |     | rocketchat-db      | mongo:3.6.9                                 | mongo:6.0.6                         | 完全移行             |
-  |     | mongo-init-replica | mongo:3.6.9                                 | mongo:6.0.6                         | 移行対象データなし        |
-  |     | sonarqube          | sonarqube:6.7.5-alpine                      | sonarqube:10.1.0-community          | -                |
-  |     | sonarqube-db       | postgres:9.5.7-alpine                       | postgres:15.3-alpine                | 完全移行             |
-  | ci  | proxy              | httpd:2.2.34-alpine                         | httpd:2.4.57-alpine                 | 移行対象データなし        |
-  |     | jenkins            | jenkins/jenkins:2.190.3                     | jenkins/jenkins:2.401.1             | パイプライン再作成＋参照環境作成 |
-  |     | gitbucket          | openjdk:jre-alpine<br/>GITBUCKET_VER 4.31.1 | gitbucket/gitbucket:4.38.4          | 完全移行             |
-  |     | gitbucket-db       | postgres:9.5.7-alpine                       | postgres:15.3-alpine                | 完全移行             |
-  |     | gitlab             | gitlab/gitlab-ce:12.4.2-ce.0                | gitlab/gitlab-ce:16.0.1-ce.0        | パイプライン再作成＋参照環境作成 |
-  |     | gitlab-db          | postgres:9.5.7-alpine                       | postgres:15.3-alpine                | パイプライン再作成＋参照環境作成 |
-  |     | gitlab-runner      | gitlab/gitlab-runner:ubuntu-v12.4.1         | gitlab/gitlab-runner:ubuntu-v16.1.0 | パイプライン再作成＋参照環境作成 |
-  |     | nexus.repository   | sonatype/nexus3:3.19.1                      | sonatype/nexus3:3.55.0              | 完全移行　            |
+  | サーバ | コンテナ　                           | 変更前　    | 変更後　     | 移行形態             |
+  |:----|:--------------------------------|---------|:---------|:-----------------| 
+  | 共通  | Docker                          | -       | 20.10.23 | -                |
+  |     | Docker Compose                  | 1.14.0  | 2.18.1   | -                |
+  | CQ  | Apache HTTP Server              | 2.2.34  | 2.4.57   | 移行対象データなし        |
+  |     | Apache Subversion               | 1.12.2  | 1.14.2   | 完全移行             |
+  |     | Redmine                         | 3.3.4   | 4.2.10   | 一部移行             |
+  |     | Redmine DB(PostgreSQL)          | 9.5.7   | 15.3     | 完全移行             |
+  |     | Rocket.Chat                     | 2.0.0   | 5.4.9    | 移行対象データなし　       |
+  |     | Rocket.Chat DB(MongoDB)         | 3.6.9   | 6.0.6    | 完全移行             |
+  |     | Rocket.Chat レプリケーションDB(MongoDB) | 3.6.9   | 6.0.6    | 移行対象データなし        |
+  |     | SonarQube(Community Edition)    | 6.7.5   | 10.1.0   | 移行対象データなし        |
+  |     | SonarQube DB(PostgreSQL)        | 9.5.7   | 15.3     | 完全移行             |
+  | CI  | Apache HTTP Server              | 1.14.0  | 2.4.57   | 移行対象データなし        |
+  |     | Jenkins                         | 2.190.3 | 2.401.1  | パイプライン再作成＋参照環境作成 |
+  |     | GitBucket                       | 4.31.1  | 4.38.4   | 完全移行             |
+  |     | GitBucket DB(PostgreSQL)        | 9.5.7   | 15.3     | 完全移行             |
+  |     | GitLab (Community Edition)      | 12.4.2  | 16.0.1   | パイプライン再作成＋参照環境作成 |
+  |     | GitLab DB(PostgreSQL)           | 9.5.7   | 15.3     | パイプライン再作成＋参照環境作成 |
+  |     | GitLab Runner                   | 12.4.1  | 16.1.0   | パイプライン再作成＋参照環境作成 |
+  |     | Nexus Repository Manager 3  　   | 3.19.1  | 3.55.0   | 完全移行　            |
 - 移行前のサーバと移行後のサーバは同一VPC上に存在していることを想定しています。
 
 # 移行手順
 
 - [事前準備](#事前準備)
-- [subversion](#subversion)
+- [Subversion](#subversion)
 - [Redmine](#redmine)
 - [Rocket.Chat](#rocketChat)
 - [SonarQube](#sonarQube)
@@ -52,7 +52,7 @@
     ```
   - 移行先のCIサーバ、移行元のCQサーバ、CIサーバにも同様にディレクトリを作成します。
 
-## subversion
+## Subversion
 
 ### 概要
 - 下記データのバックアップ＋リストアを実施します。
