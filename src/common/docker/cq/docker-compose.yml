@@ -85,7 +85,7 @@ services:
     environment:
       MONGO_URL: mongodb://rocketchat-db:27017/rocketchat?replicaSet=rs0&directConnection=true
       MONGO_OPLOG_URL: mongodb://rocketchat-db:27017/local?replicaSet=rs0&directConnection=true
-      ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
+      ROOT_URL: <繝悶Λ繧ｦ繧ｶ縺九ｉrocketchat縺ｫ繧｢繧ｯ繧ｻ繧ｹ縺吶ｋ蝣ｴ蜷医�ｮURL>
     volumes:
       - /data/rocketchat:/app/uploads
     depends_on:
