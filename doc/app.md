@@ -25,7 +25,7 @@
   - SNSで作成済みのトピックのARNが必要になります。
     - AWSマネジメントコンソールでSNSにアクセスし、トピックのARNを確認します。
       - ![SNSのトピックARN](images/aws-sns-topicarn.png)
-- docker-composeの定義を変更します。アプリで画面から設定できないため、事前に定義ファイルに指定します。
+- docker composeの定義を変更します。アプリで画面から設定できないため、事前に定義ファイルに指定します。
   - Rocket.Chatの外部URLを指定します。
     ```
     nop/docker/cq/docker-compose.yml

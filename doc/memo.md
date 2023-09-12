@@ -5,6 +5,25 @@ Collaborage開発メモ
 
 - [AWSの事前準備](aws.md#事前準備)をやります。
 - CloudFormationでnop-with-ssl.yamlを使って作ります。
+  - 以下のインスタンスのImageIdをベースに利用するOSを提供しているAMIのImageIdに修正します。
+    - Ec2Cq > Properties > ImageId
+    - Ec2Ci > Properties > ImageId
+    - Ec2Demo > Properties > ImageId
+- 各インスタンスのボリュームを設定します。
+  - xvdaの拡張
+    - EC2のインスタンス詳細 > ストレージ
+      - ブロックデバイスのデバイス名：/dev/xvda のボリュームIDを選択
+    - ボリューム詳細 > 変更
+      - ボリュームタイプ：gp2
+      - ボリュームサイズ：20GiB
+  - sdbの追加（CQ/CIのみ）
+    - EC2のボリューム > ボリュームの作成
+      - ボリュームタイプ：gp2
+      - ボリュームサイズ：40GiB
+      - AZ：ap-northeast-1a
+    - ボリュームをアタッチ
+      - インスタンス；CQ/CI のインスタンスID
+      - デバイス名：/dev/sdb
 - [OSの初期設定～アプリのインストール](app.md)をやります。
 - DemoサーバのAMIを作ります。
 - DemoサーバのAMI作成前に修正します。

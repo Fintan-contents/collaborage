@@ -3,15 +3,14 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
-Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。  
-GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAutoscaling」に進んでください。
+Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。
 
 - [アーキテクチャ](#アーキテクチャ)
 - [事前準備](#事前準備)
 - [インストール](#インストール)
 - [オペレーション](#オペレーション)
 - [マイグレーション](#マイグレーション)
-- [GitLab RunnerのAutoscaling](autoscaling.md)
+
 
 ## アーキテクチャ
 
@@ -26,8 +25,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
   - CQ(Communication/Quality)サーバ
   - CI(Continuous Integration)サーバ
   - Demoサーバ
-- CQ/CIサーバのEC2はm4.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
-- Demoサーバはt2.small、ルートボリューム20GBでデフォルト提供します。
+- CQ/CIサーバのEC2はm6i.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
+- Demoサーバはt3.small、ルートボリューム20GBでデフォルト提供します。
 - GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
 - **上記のマシンスペックは推奨する最低限のスペックになります。PJの規模に合わせて変更してください。**
 
@@ -54,9 +53,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 
 
 - CQ/CIサーバのディスク使用率のみ監視します。（Demoサーバは監視しません）
-- CQ/CIサーバのcronでシェルスクリプトを定期実行し、メトリクス(ディスク使用率)をCloudWatchに送信します。
+- CQ/CIサーバのCloudWatchAgentで、メトリクス(ディスク使用率)をCloudWatchに送信します。
 - デフォルトは5分間隔で送信します。
-- シェルスクリプトでは、[Amazon CloudWatch モニタリングスクリプト](http://aws.amazon.com/code/8720044071969977)を使って、メトリクスをCloudWatchに送信します。
   - メトリクス取得の詳細は、[Amazon EC2 Linux インスタンスのメモリとディスクのメトリクスのモニタリング](http://docs.aws.amazon.com/ja_jp/AWSEC2/latest/UserGuide/mon-scripts.html)を参照してください。
   - どこかの処理で失敗すると、AWS CLIを使ってSNSのトピックにメッセージを発行します。
     - SNSのトピックにサブスクリプションとしてemailを設定しておくことで、メール通知を実現します。
@@ -87,6 +85,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
         "Action": [
           "sts:AssumeRole",
           "cloudwatch:PutMetricData",
+          "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions",
           "ec2:CreateSnapshot",
           "ec2:CreateSnapshots",
           "ec2:CreateTags",
@@ -99,7 +99,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
           "ec2:DescribeFastSnapshotRestores",
           "ec2:DisableFastSnapshotRestores",
           "ec2:CopySnapshot",
-          "sns:Publish"
+          "sns:Publish",
+          "ssm:GetParameter"
         ],
         "Resource": [
           "*"
@@ -111,6 +112,7 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 - ロールの信頼されたエンティティに以下を指定してください。
   - ec2.amazonaws.com
   - dlm.amazonaws.com
+  - scheduler.amazonaws.com
 
   設定には以下のjsonを使用してください。
   ```
@@ -122,7 +124,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
         "Principal": {
           "Service": [
             "ec2.amazonaws.com",
-            "dlm.amazonaws.com"
+            "dlm.amazonaws.com",
+            "scheduler.amazonaws.com"
           ]
         },
         "Action": "sts:AssumeRole"
@@ -130,6 +133,37 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
     ]
   }
   ```
+- System managerのパラメータストアに以下を指定して作成してください。
+  - 名前：CloudWatchAgentNopParemeter
+  - 利用枠：標準
+  - 値
+    ```json
+    {
+      "agent": {
+        "metrics_collection_interval": 300,
+       "region": "ap-northeast-1",
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+        "debug": false
+      },
+      "metrics": {
+        "namespace":"CustomMetrics",
+        "append_dimensions": {
+          "InstanceId": "${aws:InstanceId}"
+        },
+        "metrics_collected": {
+          "disk": {
+            "measurement": [
+              "used_percent"
+            ],
+            "metrics_collection_interval": 300,
+            "resources": [
+              "/data"
+            ]
+          }
+        }
+      }
+    }
+    ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-0.2.2
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.3
@@ -215,10 +249,10 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
         - ![IAMのロール](images/aws-iam-role.png)
     - Ec2TypeForCi
       - CIサーバのインスタンスタイプを指定します。
-      - Jenkinsを使う場合は「m4.large」、GitLabを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
+      - Jenkinsを使う場合は「m6i.large」、GitLabを使う場合は「m6i.xlarge」ぐらいあれば大丈夫だと思います。
     - Ec2TypeForCq
       - Communication/Qualityサーバのインスタンスタイプを指定します。
-      - 「m4.large」ぐらいあれば大丈夫だと思います。
+      - 「m6i.large」ぐらいあれば大丈夫だと思います。
     - Ec2TypeForDemo
       - Demoサーバのインスタンスタイプを指定します。
       - PJの要件(APサーバやDBサーバ等)に合わせて指定してください。
@@ -272,24 +306,27 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 
 - Route 53にアクセスし、レコードセットを追加します。
   - ここでは、例として「adc-tis.com」というドメインへ追加しています。
-  - 「Hosted zones」を選択します。
-    - ![Route53のHostedZones](images/aws-r53-hostedzones.png)
-  - 「Domain Name」のリンクを選択します。
+  - 「ホストゾーン」を選択します。
+    - ![Route53のホストゾーン](images/aws-r53-hostedzones.png)
+  - 「ホストゾーン名」のリンクを選択します。
     - ![Route53のドメイン](images/aws-r53-domain.png)
   - レコードセットを追加します。
     - ![Route53のレコードセット](images/aws-r53-recordset.png)
-    - Name:
+    - レコード名:
       - サブドメインの名前を指定します。
       - ここで指定した名前が各EC2インスタンスへアクセスする際のホストになります。
       - アクセス先となるEC2インスタンスの用途（CQ、CI、Demo）に合わせた名前を指定します。
-    - Type:
+    - レコードタイプ:
       - IPv4のままです。
-    - Alias:
-      - Yesを選択します。
-    - Alias Target:
-      - EC2インスタンスの用途（CQ、CI、Demo）に合わせたALBを選びます。
-      - ALBの名前は「nop-alb-(cq|ci|demo)-xxxxx」で作成しています。
-      - フォーカスを合わせて入力欄を空にすると、存在しているALBがプルダウンにロードされます。
+    - エイリアス:
+      - On を選択します。
+    - トラフィックのルーティング先
+      - 以下の値を設定します
+        - Application Load Balancer と Classic Load Balancer へのエイリアス
+        - アジアパシフィック (東京)
+        - EC2インスタンスの用途（CQ、CI、Demo）に合わせたALB
+          - ALBの名前は「nop-alb-(cq|ci|demo)-xxxxx」で作成しています。
+          - フォーカスを合わせて入力欄を空にすると、存在しているALBがプルダウンにロードされます。
     - 以降の項目はデフォルトのままでCreateします。
     - EC2インスタンスごとにレコードセットを追加します。
 - ブラウザを開いて各EC2インスタンスのアプリにアクセスできることを確認します。
@@ -340,46 +377,46 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 
 
 CQサーバ/CIサーバのアプリはdocker-composeを使って起動しています。
-アプリの操作はSSHでアクセスして、docker-composeのコマンドで行います。
+アプリの操作はSSHでアクセスして、docker composeのコマンドで行います。
 
-docker-composeのコマンドは[コマンドリファレンス](http://docs.docker.jp/compose/reference/toc.html)を見てください。
+docker composeのコマンドは[コマンドリファレンス](http://docs.docker.jp/compose/reference/toc.html)を見てください。
 
 CQサーバ/CIサーバのアプリを操作する場所は次の通りです。
 
 - CQサーバ
   ```
-  /home/centos/nop/docker/cq
+  /home/ec2-user/nop/docker/cq
   ```
 - CIサーバ
   ```
-  /home/centos/nop/docker/ci
+  /home/ec2-user/nop/docker/ci
   ```
 
 #### アプリの起動
 
 ```
-$ docker-compose start
+$ docker compose start
 ```
 
 #### アプリの停止
 
 ```
-$ docker-compose stop
+$ docker compose stop
 ```
 
 #### アプリの一覧表示
 
 ```
-$ docker-compose ps
+$ docker compose ps
 ```
 - Name列にサービス名が表示されます。
 
 #### アプリのログ確認
 
 ```
-$ docker-compose logs <サービス名>
+$ docker compose logs <サービス名>
 ```
-- 「docker-compose ps」コマンドでサービス名を確認します。
+- 「docker compose ps」コマンドでサービス名を確認します。
 
 
 ### アプリの復元方法(アプリ/アプリデータ)
@@ -433,10 +470,6 @@ $ docker-compose logs <サービス名>
     ```
     $ crontab -r
     ```
-  - AWS CLIのキャッシュ(インスタンスID)を削除します。
-    ```
-    $ sudo rm /var/tmp/aws-mon/instance-id
-    ```
   - cronを設定します。
     ```
     $ cd ~/nop/script/
@@ -470,7 +503,7 @@ SSHでサーバにアクセスし、エラーログの内容を確認してく�
 CQサーバ/CIサーバともに、以下の場所にエラーログが出力されます。
 
 ```
-/home/centos/nop/log/
+/home/ec2-user/nop/log/
 ```
 
 
@@ -539,7 +572,7 @@ Collaborage固有のトピックである1と3について記載ます。
 
 - アプリを停止して削除します。
   ```
-  $ docker-compose down
+  $ docker compose down
   ```
 
 - バージョンアップ失敗時に簡単に切り戻せるようにするため、以下のディレクトリのバックアップを取ってください。
@@ -574,7 +607,7 @@ Collaborage固有のトピックである1と3について記載ます。
 - バージョンアップ時に必要な設定変更がある場合は、 `docker-compose.yml` の修正、または `/data` ディレクトリに存在する各アプリのデータファイルを修正して対応します。
 - Dockerfileを修正した場合は、イメージのビルドを行います。  
   ```
-  $ docker-compose build --no-cache
+  $ docker compose build --no-cache
   ```
 - [CQサーバの設定を変更します](ami.md#cqサーバの設定を変更します) または、 [CIサーバの設定を変更します](ami.md#ciサーバの設定を変更します) の「アプリを作り直します」の手順を参照して、アプリを作り直します。
 - バージョンアップしたアプリの動作確認を行います。
@@ -612,8 +645,8 @@ Redmineが使用しているモジュールの新バージョンが2020年1月�
 
 - ファイルを配置します。
   ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine-sub-uri.sh nop-cq:/home/centos/nop/docker/cq/
-  $ scp -F .ssh/ssh.config -r <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine nop-cq:/home/centos/nop/docker/cq/
+  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine-sub-uri.sh nop-cq:/home/ec2-user/nop/docker/cq/
+  $ scp -F .ssh/ssh.config -r <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine nop-cq:/home/ec2-user/nop/docker/cq/
   ```
 
 
@@ -666,7 +699,7 @@ Redmineが使用しているモジュールの新バージョンが2020年1月�
 - JenkinsのDockerfileをCIサーバに配置します。  
   (このDockerfileは `jenkins/jenkins:2.190.3` を使用するように構成されています)
   ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/ci-on-jenkins/dockerfiles/jenkins/Dockerfile nop-ci:/home/centos/nop/docker/ci/dockerfiles/jenkins/
+  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/ci-on-jenkins/dockerfiles/jenkins/Dockerfile nop-ci:/home/ec2-user/nop/docker/ci/dockerfiles/jenkins/
   ```
 - プロキシ環境下の場合は、[CIサーバの設定を変更します](ami.md#CIサーバの設定を変更します)の「プロキシ環境下でJenkinsを使用する場合」を参照して、設定を追記してください。
 - [バージョンアップを行う](#バージョンアップを行う)を参照して、Jenkinsのバージョンを上げてください。

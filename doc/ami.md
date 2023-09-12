@@ -27,12 +27,12 @@ AMIは、次の手順で作成し、[Nablarch](https://github.com/nablarch/nabla
 各アプリでは、管理者、グループ、ユーザ、プロジェクト/リポジトリを次の内容で作成しています。
 
 - 管理者
-  - admin/pass123-（Redmine、Rocket.Chat、SonarQube、Nexus、Jenkins、Subversion）
-  - root/pass123-（GitBucket、GitLab、Subversion）
+  - admin/pass123-（Redmine、SonarQube、Nexus、Jenkins、Subversion）
+  - root/pass123-（Rocket.Chat、GitBucket、GitLab、Subversion）
 - グループ
   - sample（Redmine、GitBucket、GitLab）
 - ユーザ
-  - nop/pass456-（Redmine、Rocket.Chat、GitBucket、GitLab、Subversion）
+  - nop/pass456-（Redmine、SonarQube、Rocket.Chat、GitBucket、GitLab、Subversion）
     - 開発メンバ
     - sampleグループに割り当て済みです。
   - jenkins/pass456-（Rocket.Chat）
@@ -48,7 +48,7 @@ OSの初期設定やアプリのインストール時に使用したシェルス
 CQサーバとCIサーバ
 ```
 home
-  centos
+  ec2-user
     nop
       docker
         ci      … docker-compose.ymlがあります。CIサーバのアプリを操作する場所です。
@@ -62,18 +62,18 @@ home
 Demoサーバ
 ```
 home
-  centos
+  ec2-user
     app         … アプリのデプロイ先です。Executable Jarをdockerで立ち上げています。
 ```
 
 # データボリュームを定期的にバックアップするように設定します
 - バックアップ対象の目印となるタグをデータボリュームに設定します。
-  - AWSマネジメントコンソールでEC2にアクセスし、「nop-ec2-cq」＞ブロックデバイスの「/dev/sdb」＞「EBS ID」のリンクを選択します。
+  - AWSマネジメントコンソールでEC2にアクセスし、「nop-ec2-cq」＞ストレージ＞ブロックデバイスの「/dev/sdb」＞「ボリュームID」のリンクを選択します。
     - ![](images/aws-ec2-datavolume.png)
   - Name列にカーソルを持っていくと鉛筆アイコンが表示されるので選択し、「nop-ebs-data-cq」と指定します。
     - ![](images/aws-ec2-volumename.png)
   - タグを追加します。
-    - タグタブに切り替えて、「タグの追加/編集」＞「タグの作成」をクリックします。
+    - タグタブに切り替えて、「タグを管理」をクリックします。
       - キーと値を入力して、「保存」をクリックします。
         - キー: NopDataDlmTarget
         - 値: true
@@ -83,27 +83,30 @@ home
     - 「nop-ec2-cq」に設定したものと同一のタグを追加します。
 
 - データボリュームのバックアップのスケジュールを設定します。
-  - AWSマネジメントコンソールでEC2にアクセスし、「ライフサイクルマネージャー」＞「スナップショットライフサイクルポリシーの作成」をクリックします。
-    - 説明: nop-data-volume-backup
-    - リソースタイプを選択します: ボリューム
-    - これらのタグを持つターゲット: NopDataDlmTarget:true
-      - タグはテキストボックスをクリックすると表示される選択肢から選びます。  
-        選ぶと以下のようになります。
-        - ![](images/aws-ec2-dlm-target-tag.png)
-    - ライフサイクルポリシーテキスト: デフォルトのまま
-    - ポリシースケジュール
+  - AWSマネジメントコンソールでEC2にアクセスし、「ライフサイクルマネージャー」＞「ライフサイクルポリシーを作成」を設定します。
+    - ポリシータイプを選択
+      - ポリシータイプ: EBS スナップショットポリシー
+      - 「次のステップ」を選択
+    - 設定を指定
+      - ターゲットリソース: ボリューム
+        - ターゲットリソースタイプ
+          - キー: NopDataDlmTarget
+          - 値: true
+          - タグはテキストボックスをクリックすると表示される選択肢から選びます。  
+            選ぶと以下のようになります。
+            - ![](images/aws-ec2-dlm-target-tag.png)
+      - 説明: nop-data-volume-backup
+      - IAMロール: デフォルトロール
+    - スケジュール 1 を設定
       - スケジュール名: nop-data-volume-backup-schedule
-      - ポリシーの実行間隔: 24時間
-      - 開始時刻: 14:10 UCT (日本時刻23:10になります。)
-      - Retention type: Age
-      - Retain: 7
-      - 間隔の単位: Days
-    - タグ付け情報
-      - ボリュームからタグをコピーする: ON
-    - IAMロール: デフォルトのロールを使用
-    - ポリシー
-      - 作成後のポリシーのステータス: 有効化
-    - 「ポリシーの作成」をクリックします。
+      - 頻度:　毎日
+      - 毎: 24時間
+      - 開始時刻: 14:10 UCT (日本時間で23:10)
+      - 保持タイプ: 保持期間
+        - 保持期間: 7日
+      - タグ付け
+        - ソースからタグをコピー: ON
+
 - スナップショットの取得に成功していることを翌日確認します。  
   ライフサイクルマネージャーは「指定された開始時刻から1時間以内に作成が開始される」仕様であり、設定後、すぐに確認できないためです。
 
@@ -111,42 +114,54 @@ home
 
 
 - SSHでCQサーバにアクセスします。
-- centosユーザのパスワードを変更します。
+- ec2-userユーザのパスワードを変更します。
   ```
   $ passwd
   ```
   - 現在のパスワード: pass789-
-- プロキシ環境下の場合は、centosユーザのプロキシの設定を変更します。
+- プロキシ環境下の場合は、ec2-userユーザのプロキシの設定を変更します。
   ```
   $ vi ~/.bash_profile
   ```
   - プロキシ情報はネットワーク管理者に確認してください。
   - プロキシの設定のみ変更します。no_proxyは追加します。
     ```
-    export HTTP_PROXY=http://26.247.64.251:3128
-    export HTTPS_PROXY=http://26.247.64.251:3128
-    export http_proxy=http://26.247.64.251:3128
-    export https_proxy=http://26.247.64.251:3128
+    export HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export http_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export https_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     export no_proxy=169.254.169.254
     ```
     - no_proxyには「169.254.169.254」を指定します。インスタンスメタデータを取得する際のIPになります。
       - cronで実行するメトリクス送信でAWS CLIを使います。
         プロキシ環境下で、EC2インスタンスにロールを指定してAWS CLIを使う場合に、インスタンスメタデータを取得するため、この設定が必要になります。
+    - こんな感じになります。
+      ```
+      export HTTP_PROXY=http://192.0.2.1:3128
+      export HTTPS_PROXY=http://192.0.2.1:3128
+      export http_proxy=http://192.0.2.1:3128
+      export https_proxy=http://192.0.2.1:3128
+      export no_proxy=169.254.169.254
+      ```
   - 設定を反映します。
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、yumのプロキシの設定を変更します。
+- プロキシ環境下の場合は、dnfのプロキシの設定を変更します。
   ```
-  $ sudo vi /etc/yum.conf
+  $ sudo vi /etc/dnf/dnf.conf
   ```
   - 最後の行に以下を追加します。
     ```
-    proxy=http://26.247.64.251:3128
+    proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      proxy=http://192.0.2.1:3128
+      ```
 - OSのパッケージを更新します。
   ```
-  $ sudo yum -y update
+  $ sudo dnf -y update
   ```
 - SSHを切断します。
   ```
@@ -188,11 +203,18 @@ home
   ```
   - プロキシの設定のみ変更します。
     ```
-    HTTP_PROXY=http://26.247.64.251:3128
-    HTTPS_PROXY=http://26.247.64.251:3128
-    http_proxy=http://26.247.64.251:3128
-    https_proxy=http://26.247.64.251:3128
+    HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    http_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    https_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      HTTP_PROXY=http://192.0.2.1:3128
+      HTTPS_PROXY=http://192.0.2.1:3128
+      http_proxy=http://192.0.2.1:3128
+      https_proxy=http://192.0.2.1:3128
+      ```
 - プロキシ環境下の場合は、SonarQubeのプロキシの設定を変更します。
   ```
   $ sudo vi nop/docker/cq/sonar.properties
@@ -209,11 +231,11 @@ home
     ```
   - アプリを停止して削除します。
     ```
-    $ docker-compose down
+    $ docker compose down
     ```
   - アプリを作成して起動します。
     ```
-    $ docker-compose up -d
+    $ docker compose up -d
     ```
   - RedmineにサブURIの設定を入れます。
     ```
@@ -225,11 +247,11 @@ home
     ```
     - アクセスできない場合は、以下のコマンドでredmineのログを確認します。
       ```
-      $ docker-compose logs redmine
+      $ docker compose logs redmine
       ```
       プロキシの設定がされているのにgemの取得に失敗しているログがでている場合は、外部のサイトが一時的に停止している可能性があります。  
       この場合は数時間おいて、「アプリを停止して削除します」からやり直します。
-    
+   
 - トピックのARNを変更します。
   ```
   $ vi ~/.bash_profile
@@ -237,43 +259,58 @@ home
   - AWSマネジメントコンソールでSNSにアクセスし、トピックのARNを確認します。
     - ![SNSのトピックARN](images/aws-sns-topicarn.png)
   - AWS_SNS_TOPICのみ変更します。
-  ```
-  export AWS_SNS_TOPIC=arn:aws:sns:ap-northeast-1:746256062285:nop-alarm
-  ```
+    ```
+    export AWS_SNS_TOPIC=<作成したARN>
+    ```
   - 設定を反映します。
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、Amazon CloudWatch モニタリングスクリプトをプロキシ環境下で使うための設定を行います。
+- プロキシ環境下の場合は、wgetをプロキシ環境下で使うための設定を行います。
   - 環境変数を追加します。
     ```
-    $ vi ~/.bash_profile
+    $ sudo vi /etc/wgetrc
     ```
-    - 2つの環境変数を追加します。
+    - プロキシの設定を追加します。
       ```
-      export PERL_NET_HTTPS_SSL_SOCKET_CLASS=Net::SSL
-      export PERL_LWP_SSL_VERIFY_HOSTNAME=0
+      HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+      HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
       ```
-    - 設定を反映します。
-      ```
-      $ source ~/.bash_profile
-      ```
-  - パッケージをインストールします。
+      - こんな感じになります。
+        ```
+        HTTP_PROXY=http://192.0.2.1:3128
+        HTTPS_PROXY=http://192.0.2.1:3128
+        ```
+- プロキシ環境下の場合は、AmazonCloudWathAgentのプロキシの設定を変更します。
+  ```
+  $  sudo vi /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml
+  ```
+  - 既存のコメントアウトを解除し、プロキシの設定を追加します。
     ```
-    $ sudo yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
-    $ sudo yum install perl-Net-SSLeay perl-Crypt-SSLeay perl-IO-Socket-SSL -y
+    [proxy]
+      http_proxy = "http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      https_proxy = "http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      no_proxy = "169.254.169.254"
     ```
+    - こんな感じになります。
+      ```
+      [proxy]
+        http_proxy = "http://192.0.2.1:3128"
+        https_proxy = "http://192.0.2.1:3128"
+        no_proxy = "169.254.169.254"
+      ```
 - cronを設定します。
   ```
   $ cd ~/nop/script/
   $ ./set-cron-after-try-command.sh
   ```
-  - テストメールの送信、CloudWatchへのメトリクス送信を実行し、
-    エラーが出なければcronの設定を行い、cronの設定内容が表示されます。  
-    cronでは以下を設定します。
-    - 監視用のメトリクス取得…5分間隔
-    - アプリデータのバックアップ前のアプリ停止…23時00分
-    - アプリデータのバックアップ後のアプリ開始… 0時30分
+  - テストメールの送信、CloudWatch へのメトリクス送信サービスの再起動を実行し、
+    エラーが出なければcronの設定を行い、cronの設定内容が表示されます。
+    - メトリクス送信サービスでは以下の設定で送信を行います。
+      -  /data以下のボリュームの使用率を5分間隔で送信
+    - cronでは以下を設定します。
+      - アプリデータのバックアップ前のアプリ停止…23時00分
+      - アプリデータのバックアップ後のアプリ開始… 0時30分
 - プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
   - docker.serviceをコピーします。
     ```
@@ -285,8 +322,12 @@ home
     ```
     - ExecStartコマンドの直前にProxyの設定を追加します。
       ```
-      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      Environment="HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
       ```
+      - こんな感じになります。
+        ```
+        Environment="HTTP_PROXY=http://192.0.2.1:3128"
+        ```
   - 設定の再読込とDockerの再起動を行います。
     ```
     $ sudo systemctl daemon-reload
@@ -302,41 +343,53 @@ home
 
 
 - SSHでCIサーバにアクセスします。
-- centosユーザのパスワードを変更します。
+- ec2-userユーザのパスワードを変更します。
   ```
   $ passwd
   ```
   - 現在のパスワード: pass789-
-- プロキシ環境下の場合は、centosユーザのプロキシの設定を変更します。
+- プロキシ環境下の場合は、ec2-userユーザのプロキシの設定を変更します。
   ```
   $ vi ~/.bash_profile
   ```
   - プロキシの設定のみ変更します。no_proxyは追加します。
     ```
-    export HTTP_PROXY=http://26.247.64.251:3128
-    export HTTPS_PROXY=http://26.247.64.251:3128
-    export http_proxy=http://26.247.64.251:3128
-    export https_proxy=http://26.247.64.251:3128
+    export HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export http_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export https_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     export no_proxy=169.254.169.254
     ```
     - no_proxyには「169.254.169.254」を指定します。インスタンスメタデータを取得する際のIPになります。
       - cronで実行するメトリクス送信でAWS CLIを使います。
         プロキシ環境下で、EC2インスタンスにロールを指定してAWS CLIを使う場合に、インスタンスメタデータを取得するため、この設定が必要になります。
+    - こんな感じになります。
+      ```
+      export HTTP_PROXY=http://192.0.2.1:3128
+      export HTTPS_PROXY=http://192.0.2.1:3128
+      export http_proxy=http://192.0.2.1:3128
+      export https_proxy=http://192.0.2.1:3128
+      export no_proxy=169.254.169.254
+      ```
   - 設定を反映します。
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、yumのプロキシの設定を変更します。
+- プロキシ環境下の場合は、dnfのプロキシの設定を変更します。
   ```
-  $ sudo vi /etc/yum.conf
+  $ sudo vi /etc/dnf/dnf.conf
   ```
   - 最後の行に以下を追加します。
     ```
-    proxy=http://26.247.64.251:3128
+    proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      proxy=http://192.0.2.1:3128
+      ```
 - OSのパッケージを更新します。
   ```
-  $ sudo yum -y update
+  $ sudo dnf -y update
   ```
 - SSHを切断します。
   ```
@@ -357,11 +410,18 @@ home
   ```
   - プロキシの設定のみ変更します。
     ```
-    HTTP_PROXY=http://26.247.64.251:3128
-    HTTPS_PROXY=http://26.247.64.251:3128
-    http_proxy=http://26.247.64.251:3128
-    https_proxy=http://26.247.64.251:3128
+    HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    http_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    https_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      HTTP_PROXY=http://192.0.2.1:3128
+      HTTPS_PROXY=http://192.0.2.1:3128
+      http_proxy=http://192.0.2.1:3128
+      https_proxy=http://192.0.2.1:3128
+      ```
 - GitLabを使う場合はアプリの設定を変更します。
   ```
   $ vi nop/docker/ci/docker-compose.yml
@@ -402,32 +462,32 @@ home
   - Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
       ```
       {
-       　"insecure-registries": ["<nexsusのホストのIPアドレス>:19081"]
+         "insecure-registries": ["<NexusのホストのIPアドレス>:19081"]
       }
       ```
     - 設定例を示します。
       ```
       {
-       　"insecure-registries": ["10.0.1.9:19081"]
+         "insecure-registries": ["192.0.2.3:19081"]
       }
       ```
   - Dockerで起動しているアプリを停止し、Dockerを再起動します。
-      - アプリを操作するディレクトリに移動します。
-        ```
-        $ cd ~/nop/docker/ci/
-        ```
-      - アプリを停止します。
-        ```
-        $ docker-compose stop
-        ```
-      - Dockerを再起動します。
-        ```
-        $ sudo systemctl restart docker
-        ```
-      - Docker再起動と共に、アプリが再開したことを確認します。各アプリのStateがUpになっていれば、起動しています。
-        ```
-        $ docker-compose ps
-        ```
+    - アプリを操作するディレクトリに移動します。
+      ```
+      $ cd ~/nop/docker/ci/
+      ```
+    - アプリを停止します。
+      ```
+      $ docker compose stop
+      ```
+    - Dockerを再起動します。
+      ```
+      $ sudo systemctl restart docker
+      ```
+    - Docker再起動と共に、アプリが再開したことを確認します。各アプリのStateがUpになっていれば、起動しています。
+      ```
+      $ docker compose ps
+      ```
 
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
@@ -436,11 +496,11 @@ home
     ```
   - アプリを停止して削除します。
     ```
-    $ docker-compose down
+    $ docker compose down
     ```
   - アプリを作成して起動します。
     ```
-    $ docker-compose up -d
+    $ docker compose up -d
     ```
 - トピックのARNを変更します。
   ```
@@ -449,43 +509,58 @@ home
   - AWSマネジメントコンソールでSNSにアクセスし、トピックのARNを確認します。
     - ![SNSのトピックARN](images/aws-sns-topicarn.png)
   - AWS_SNS_TOPICのみ変更します。
-  ```
-  export AWS_SNS_TOPIC=arn:aws:sns:ap-northeast-1:746256062285:nop-alarm
-  ```
+    ```
+    export AWS_SNS_TOPIC=<作成したARN>
+    ```
   - 設定を反映します。
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、Amazon CloudWatch モニタリングスクリプトをプロキシ環境下で使うための設定を行います。
+- プロキシ環境下の場合は、wgetをプロキシ環境下で使うための設定を行います。
   - 環境変数を追加します。
     ```
-    $ vi ~/.bash_profile
+    $ sudo vi /etc/wgetrc
     ```
-    - 2つの環境変数を追加します。
+    - プロキシの設定を追加します。
       ```
-      export PERL_NET_HTTPS_SSL_SOCKET_CLASS=Net::SSL
-      export PERL_LWP_SSL_VERIFY_HOSTNAME=0
+      HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+      HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
       ```
-    - 設定を反映します。
-      ```
-      $ source ~/.bash_profile
-      ```
-  - パッケージをインストールします。
+      - こんな感じになります。
+       ```
+        HTTP_PROXY=http://192.0.2.1:3128
+        HTTPS_PROXY=http://192.0.2.1:3128
+        ```
+- プロキシ環境下の場合は、AmazonCloudWathAgentのプロキシの設定を変更します。
+  ```
+  $  sudo vi /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml
+  ```
+  - 既存のコメントアウトを解除し、プロキシの設定を追加します。
     ```
-    $ sudo yum install perl-Switch perl-DateTime perl-Sys-Syslog perl-LWP-Protocol-https -y
-    $ sudo yum install perl-Net-SSLeay perl-Crypt-SSLeay perl-IO-Socket-SSL -y
+    [proxy]
+      http_proxy = "http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      https_proxy = "http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      no_proxy = "169.254.169.254"
     ```
+    - こんな感じになります。
+      ```
+      [proxy]
+        http_proxy = "http://192.0.2.1:3128"
+        https_proxy = "http://192.0.2.1:3128"
+        no_proxy = "169.254.169.254"
+      ```
 - cronを設定します。
   ```
   $ cd ~/nop/script/
   $ ./set-cron-after-try-command.sh
   ```
-  - テストメールの送信、CloudWatchへのメトリクス送信を実行し、
-    エラーが出なければcronの設定を行い、cronの設定内容が表示されます。  
-    cronでは以下を設定します。
-    - 監視用のメトリクス取得…5分間隔
-    - アプリデータのバックアップ前のアプリ停止…23時00分
-    - アプリデータのバックアップ後のアプリ開始… 0時30分
+  - テストメールの送信、CloudWatch へのメトリクス送信サービスの再起動を実行し、
+    エラーが出なければcronの設定を行い、cronの設定内容が表示されます。
+    - メトリクス送信サービスでは以下の設定で送信を行います。
+      -  /data以下のボリュームの使用率を5分間隔で送信
+    - cronでは以下を設定します。
+      - アプリデータのバックアップ前のアプリ停止…23時00分
+      - アプリデータのバックアップ後のアプリ開始… 0時30分
 - プロキシ環境下の場合は、Dockerのプロキシの設定を変更します。
   - docker.serviceをコピーします。
     ```
@@ -497,8 +572,14 @@ home
     ```
     - ExecStartコマンドの直前にProxyの設定を追加します。
       ```
-      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      Environment="HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      Environment="HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
       ```
+      - こんな感じになります。
+        ```
+        Environment="HTTP_PROXY=http://192.0.2.1:3128"
+        Environment="HTTPS_PROXY=http://192.0.2.1:3128"
+        ```
   - 設定の再読込とDockerの再起動を行います。
     ```
     $ sudo systemctl daemon-reload
@@ -514,37 +595,48 @@ home
 
 
 - SSHでDemoサーバにアクセスします。
-- centosユーザのパスワードを変更します。
+- ec2-userユーザのパスワードを変更します。
   ```
   $ passwd
   ```
   - 現在のパスワード: pass789-
-- プロキシ環境下の場合は、centosユーザのプロキシの設定を変更します。
+- プロキシ環境下の場合は、ec2-userユーザのプロキシの設定を変更します。
   ```
   $ vi ~/.bash_profile
   ```
   - プロキシの設定のみ変更します。
     ```
-    export HTTP_PROXY=http://26.247.64.251:3128
-    export HTTPS_PROXY=http://26.247.64.251:3128
-    export http_proxy=http://26.247.64.251:3128
-    export https_proxy=http://26.247.64.251:3128
+    export HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export http_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
+    export https_proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      export HTTP_PROXY=http://192.0.2.1:3128
+      export HTTPS_PROXY=http://192.0.2.1:3128
+      export http_proxy=http://192.0.2.1:3128
+      export https_proxy=http://192.0.2.1:3128
+      ```
   - 設定を反映します。
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、yumのプロキシの設定を変更します。
+- プロキシ環境下の場合は、dnfのプロキシの設定を変更します。
   ```
-  $ sudo vi /etc/yum.conf
+  $ sudo vi /etc/dnf/dnf.conf
   ```
   - 最後の行に以下を追加します。
     ```
-    proxy=http://26.247.64.251:3128
+    proxy=http://<プロキシサーバのIPアドレス>:<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      proxy=http://192.0.2.1:3128
+      ```
 - OSのパッケージを更新します。
   ```
-  $ sudo yum -y update
+  $ sudo dnf -y update
   ```
 - SSHを切断します。
   ```
@@ -570,8 +662,14 @@ home
     ```
     - ExecStartコマンドの直前にProxyの設定を追加します。
       ```
-      Environment="HTTP_PROXY=http://26.247.64.251:3128"
+      Environment="HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      Environment="HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
       ```
+      - こんな感じになります。
+        ```
+        Environment="HTTP_PROXY=http://192.0.2.1:3128"
+        Environment="HTTPS_PROXY=http://192.0.2.1:3128"
+        ```
   - 設定の再読込とDockerの再起動を行います。
     ```
     $ sudo systemctl daemon-reload
@@ -587,10 +685,10 @@ home
 
 
 - AWSマネジメントコンソールでCloudWatchにアクセスし、メトリクスを確認します。
-  - 「メトリクス」＞「Linuxシステム」＞「Filesystem, InstanceId, MountPath」を選択します
-    - ![CloudWatchのLinux](images/aws-cw-linux.png)
+  - 「すべてのメトリクス」＞「CustomMetrics」＞「InstanceId,device,fstype,path」を選択します
+    - ![CloudWatchのLinux](images/aws-cw-custommetrics.png)
     - ![CloudWatchのファイルシステム](images/aws-cw-file.png)
-  - MountPath:/data、メトリクス名:DiskSpaceUtilizationで取得されます。
+  - path:/data、メトリクス名:disk_user_percentで取得されます。
     - メトリクスを選択すると、グラフに表示され、インスタンスの名前(nop-ec2-cq、nop-ec2-ci)を確認できます。
       - ![CloudWatchのメトリクス](images/aws-cw-metrics.png)
 
@@ -598,44 +696,97 @@ home
 # CloudWatchでディスク使用率にアラームを設定します
 
 
-- AWSマネジメントコンソールでCloudWatchにアクセス、「アラーム」＞「アラームの作成」を選択します。
+- AWSマネジメントコンソールでCloudWatchにアクセス、「アラーム」＞「すべてのアラーム」＞「アラームの作成」を選択します。
 - 先ほど確認したメトリクスを選択し次に進みます。
   - ![CloudWatchのアラームのメトリクス](images/aws-cw-alarm-metrics.png)
 - アラームの定義を指定して作成します。
   - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config1.png)
-    - 「アラーム条件」、「しきい値」を指定し、「次へ」をクリックします。  
-      
+    - 「しきい値の種類」「アラーム条件」、「しきい値」を指定します。
+    - 「その他の設定」＞「欠落データの処理」に「欠落データを不正として処理」を指定します。
+    - 「次へ」をクリックします。
+
   - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config2.png)
-    - 「通知の送信先」を指定し、「次へ」をクリックします。  
-    
+    - 「通知の送信先」を指定し、「次へ」をクリックします。
+
   - ![CloudWatchのアラームの定義](images/aws-cw-alarm-config3.png)
     - 「アラーム名」を指定し、「次へ」をクリックします。
-      - アラーム名は「CIサーバのディスク使用率」「CQサーバのディスク使用率」等、任意の名前にします。  
-      
+      - アラーム名は「CQサーバのディスク使用率」「CIサーバのディスク使用率」等、任意の名前にします。
+
   - 「アラームの作成」をクリックします。
 
+- メトリクスの取得失敗検知のダウンタイムを設定します。  
+  ここでは平日の9～18時以外をダウンタイムとして設定しています。ダウンタイムの設定は運用に応じて適宜変更してください。
+  - AWSマネジメントコンソールでEventBridgeにアクセス、「スケジュール」＞「スケジュールを作成」を選択します。
+  - ![EventBridgeのスケジュール](images/aws-ev-schedules.png)
+  - アラームを無効化するスケジュールを作成します。
+    - スケジュール名と説明を設定します。
+      - スケジュール名: DisabledAlarmActions
+      - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config1.png)
+    - スケジュールのパターンを設定します。
+      - 頻度: 定期的なスケジュール
+      - スケジュールの種類: cron ベースのスケジュール
+      - cron式: 0 18 ? * 2-6 *
+      - フレックスタイムウィンドウ: オフ
+      - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config2.png)
+    - 「次へ」を選択します。
+    - ターゲットの詳細を設定します。
+      - ターゲットAPI: すべてのAPI
+      - すべてのAWSのサービス: CloudWatch
+      - API: DisableAlarmActions
+      - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config3.png)
+    - DisableAlarmActionsを設定します。
+      - DisableAlarmActionsを設定します: 以下を設定
+        ```shell
+        {
+          "AlarmNames": [
+            "CQサーバのディスク使用率",
+            "CIサーバのディスク使用率"
+          ]
+        }
+        ```
+      - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config4.png)
+    - 「次へ」を選択します。
+    - アクセス許可を設定します。
+      - 実行ロール: 既存のロールを使用
+      - 既存の役割を選択: 作成したロールを設定
+      - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config5.png)
+    - 「次へ」を選択します。
+    - 「スケジュールを保存」を選択します。
+  - 同様の手順でアラームを有効化するスケジュールを作成します。
+    - 以下の項目のみ設定値を変更してください。
+      - スケジュール名と説明
+        - スケジュール名: EnabledAlarmActions
+      - スケジュールのパターン
+        - cron式: 0 9 ? * 2-6 *
+      - ターゲットの詳細
+        - ターゲットAPI: すべてのAPI
+        - すべてのAWSのサービス: CloudWatch
+        - API: EnableAlarmActions
 
 # CloudWatchでバックアップ失敗時の通知を設定します
 
 - AWSマネジメントコンソールでCloudWatchにアクセス、「ルール」＞「ルールの作成」を選択します。
-  - ![CloudWatchのルールの定義](images/aws-cw-rule-create-snapshot-failed.png)  
-    以下の項目を設定し、「設定の詳細」をクリックします。
-    - イベントソース
-      - イベントパターン
-      - サービス名: EC2
-      - イベントタイプ: EBS Snapshot Notification
-      - 特定のイベント
-        - createSnapshot
-      - 特定の結果
-        - failed
-    - ターゲット
-      - SNSトピック
-        - トピック: nop-alarm
-  - 以下を入力します。
-    - ルールの定義
-      - 名前: notification-createSnapshot-failed
-      - 説明: 空欄
-      - 状態: 有効化をON
+  -  以下の項目を設定し、ルールを作成します。
+  - ルール
+    - 名前: notification-createSnapshot-failed
+    - ルールタイプ: イベントパターンを持つルール
+    - ![CloudWatchのルールの定義](images/aws-cw-rule-create-snapshot-failed1.png)
+  - イベントソース
+    - AWS イベントまたは EventBridge パートナーイベント
+  - 作成のメソッド
+    - メソッド: パターンフォームを使用する
+  - イベントパターン
+    - イベントソース: AWSのサービス
+    - AWSのサービス: EC2
+    - イベントタイプ: EBS Snapshot Notification
+    - 特定のイベント: createSnapshot
+    - 特定の結果: failed
+    - ![CloudWatchのルールの定義](images/aws-cw-rule-create-snapshot-failed2.png)
+  - ターゲット
+    - ターゲットタイプ: AWSのサービス
+    - ターゲットを選択: SNSトピック
+    - トピック: nop-alarm
+    - ![CloudWatchのルールの定義](images/aws-cw-rule-create-snapshot-failed3.png)
 
 # アプリにアクセスし、初期設定を行います
 
@@ -663,12 +814,12 @@ home
   ```
 - ブラウザでアクセスしたURLをブックマークしておきます。
 - 管理者でログインします。
-  - ユーザ名: admin
+  - ユーザ名: root
   - パスワード: pass123-
 - 管理者のパスワードを変更します。
- - 画面左上のAのアイコンをクリックして表示されるプルダウン＞「マイアカウント」＞「プロフィール」を選択します。
-   - 新しいパスワードを入力して、変更を保存します。
-   - 変更前のパスワードの入力が求められるので「pass123-」を入力します。
+- 画面左上のRのアイコンをクリックして表示されるプルダウン＞「マイアカウント」＞「プロフィール」を選択します。
+  - 新しいパスワードを入力して、変更を保存します。
+  - 変更前のパスワードの入力が求められるので「pass123-」を入力します。
 
 ## SonarQube
 
@@ -683,7 +834,7 @@ home
     - Password: pass123-
 - 管理者のパスワードを変更します。
   - 画面上部の「Administration」＞「Security」＞「Users」を選択します。
-    - adminの鍵アイコン「Change password」を選択し、パスワードを変更します。
+    - adminの歯車アイコン「Enter a nee password」を選択し、パスワードを変更します。
 
 ## Nexus
 
@@ -697,8 +848,8 @@ home
     - Username: admin
     - Password: pass123-
 - 管理者のパスワードを変更します。
-  - 画面右上の「admin」＞「Change password」を選択します。
-    - はじめに、再度認証が求められるので、変更前のパスワード「pass123-」を指定して、パスワードを変更します。
+  - 画面右上の「admin」を選択します。
+    - 画面下部からパスワードを設定し、「Change password」で変更します。
 - プロキシ環境下の場合は、プロキシの設定を行います。
   - 画面左上の「歯車(Server administration and configuration)」アイコン＞画面左のSystemの「HTTP」を選択します。
     - HTTP proxy: チェックしてプロキシを設定します。
@@ -744,74 +895,131 @@ home
     - パスワードを入力し、保存します。
 - プロキシ環境下の場合は、プロキシの設定を行います。
   - ロゴを選択してトップページを表示します。
-  - 画面左の「Jenkinsの管理」＞「プラグインの管理」＞「高度な設定」タブを選択します。
+  - 画面左の「Jenkinsの管理」＞「Plugins」＞「Advanced settings」タブを選択します。
     - HTTP Proxyの設定を入力し、保存します。
-      - 対象外ホスト: Jenkinsからアクセスする可能性がある「proxy(docker-composeのサービス名)」と「CQサーバのプライベートIP」をカンマ区切りで指定します。
-        - 例: proxy,10.0.1.110
+      - 対象外ホスト: Jenkinsからアクセスする可能性がある「proxy(docker composeのサービス名)」と「CQサーバのプライベートIP」をカンマ区切りで指定します。
+        - 例: proxy,192.0.2.2
         - 指定内容は[URLの仕組み](url.md)を参照してください。
 - JenkinsのURLを設定します。  
   この設定を行うことで、Jenkinsの管理画面に表示される「リバースプロキシの設定がおかしいようです」という警告を解決できます。
   - ロゴを選択してトップページを表示します。
-  - 画面左の「Jenkinsの管理」＞「システムの設定」を選択します。
-  - Jenkinsの位置のJenkins URLにURLを指定します。  
+  - 画面左の「Jenkinsの管理」＞「System」を選択します。
+  - Jenkinsの位置のJenkins URLにURLを指定します。
     - ブラウザでアクセスする場合と同じURLを指定します。
     - 例: https://nop-ci.adc-tis.com/jenkins
 - RocketChatへの通知設定を変更します。
   - 画面一番下のGlobal RocketChat Notifier Settingsを指定します。
     - Rocket Server URL: Rocket.ChatのURLを指定します。
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
-    - 例: http://10.0.1.110/rocketchat/
+    - 例: http://192.0.2.2/rocketchat/
+  - 「高度な設定」のBuild Server URLにURLを指定します。
+    - ブラウザでアクセスする場合と同じURLを指定します。
+    - 例: https://nop-ci.adc-tis.com/jenkins
   - Test Connectionします。Successと表示されればOKです。Rocket.Chatのチャンネルにメッセージが届いています。
     - メッセージのリンクをクリックしてJenkinsへ移動できることを確認します。
   - 保存します。
-- nablarch-example-webのパイプラインを変更します。
+- jakartaee-hello-world のパイプラインを変更します。
+  - SonarQubeでトークンを生成します。
+    - SonarQubeに管理者でログインします。
+    - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+    - 画面右上の「Security」を選択します。
+    - 既存のトークンを「Revoke」から削除します。
+    - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
+      - Name: ci
+      - Type: Global Analysis Token
+      - Expires in : No expiration
+    - 生成されたトークンをコピーして保持します。
   - GibBucketにnopユーザでログインします。
     - Username: nop
     - Password: pass456-
-  - 画面左にある「sample/nablarch-example-web」を選択します。
+  - 画面左にある「sample/jakartaee-hello-world」を選択します。
   - 画面右側にあるリポジトリのURLをコピーします。
   - 作業PCの適当な場所にgit cloneします。
     - ユーザ名/パスワードを聞かれるのでnopユーザを指定します。
     - 503エラーとなった場合は環境変数no_proxyにCIサーバのホストを設定します。
       ```
-      $ export no_proxy=26.247.135.132
+      $ export no_proxy=<CIサーバのホスト>
       ```
-  - IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
+      - こんな感じになります。
+        ```
+        $ export no_proxy=192.0.2.3
+        ```
+  - jakartaee-hello-world(Mavenプロジェクト)を開きます。
   - ブランチを「develop」に切り替えます。
   - パイプラインのパラメータを変更します。
     ```
-    nablarch-example-web/Jenkinsfile
+    jakartaee-hello-world/Jenkinsfile
     ```
     - 環境変数を修正します。
       ```
+      image: <CIサーバのホスト>:19081/maven-jdk-17-with-sshpass-on-docker
+      (中略)
       environment {
         SONAR_HOST_URL = '<SonarQubeのURL>'
+        SONAR_TOKEN = '<SonarQubeのトークン>'
         DEMO_HOST = '<Demoサーバのホスト>'
         DEMO_PORT = '<DemoサーバのSSHのポート番号>'
         DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
         DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
+        PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
+        CI_HOST = '<CIサーバのホスト>'
+        NEXUS_USER = '<Nexusのユーザ名>'
+        NEXUS_PASSWORD = '<Nexusのパスワード>'
       }
       ```
       - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
       - こんな感じになります。
         ```
+        image: 192.0.2.3:19081/maven-jdk-17-with-sshpass-on-docker
+        (中略)
         environment {
-          SONAR_HOST_URL = 'http://10.0.1.110/sonarqube'
-          DEMO_HOST = '10.0.1.63'
+          SONAR_HOST_URL = 'http://192.0.2.2/sonarqube'
+          SONAR_TOKEN = 'SONARQUBE_TOKEN'
+          DEMO_HOST = '192.0.2.4'
           DEMO_PORT = '22'
-          DEMO_USERNAME = 'centos'
+          DEMO_USERNAME = 'ec2-user'
           DEMO_PASSWORD = 'pass789-'
+          PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
+          CI_HOST = '192.0.2.3'
+          NEXUS_USER = 'admin'
+          NEXUS_PASSWORD = 'pass123-'
         }
+        ```
+    - プロキシ環境下の場合は、プロキシの設定を行います。
+      - sh up.sh の実施前に `&& source ~/.bash_profile `を実施します。
+      - こんな感じになります。
+        ```
+        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && source ~/.bash_profile && sh up.sh"'
         ```
 - pushします。
 - Jenkinsが変更を検知してジョブが実行されます。
   - CI結果（テスト、デプロイなど）はRocket.Chatに通知されます。
   - 「Deploy to demo」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
     ```
-    <DEMOサーバのホスト>/
+    <DEMOサーバのホスト>/jakartaee-hello-world
     ```
-    - ログインID: 10000001
-    - パスワード: pass123-
+    - payara のデモページが表示されます。
+
+- ブランチ push-docker-image にも同様に修正、pushを行います。
+  - プロキシ環境下の場合は、プロキシの設定を行います。
+    - パイプラインのパラメータを変更します。
+      ```
+      jakartaee-hello-world/Jenkinsfile
+      ```
+      - jib:build の実施時にproxyの設定を追加します。
+        追加する引数は以下になります。
+        - `-Dhttp.proxyHost=<プロキシサーバのIPアドレス>`
+        - `-Dhttp.proxyPort=<プロキシサーバのポート番号>`
+        - `-Dhttps.proxyHost=<プロキシサーバのIPアドレス>`
+        - `-Dhttps.proxyPort=<プロキシサーバのポート番号>`
+        - `-Dhttp.nonProxyHosts=${CI_HOST}`
+      - こんな感じになります。
+        ```
+        - mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -Dhttp.proxyHost=192.0.2.1 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=192.0.2.1 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=${CI_HOST} -s ci/settings.xml
+        ```
+  - 「Docker image push to repository」まで成功すると、dockerイメージがnexusにpushされます。
+    - nexusにアクセスします。
+    - 「Browse」＞「docker-hosted」＞「v2/jakartaee-hello-world/manifests」に作成したdockerイメージの情報が追加されていることを確認します。
 
 ## GitLab
 
@@ -825,124 +1033,163 @@ home
     - Username: root
     - Password: pass123-
 - 管理者のパスワードを変更します。
-  - 画面右上のプルダウン＞「Settings」＞「Password」タブを選択します。
+  - 画面右上のプルダウン＞「Edit profile」＞「Password」タブを選択します。
     - パスワードを変更します。
-- GitLabのCIコンポーネント(GitLab Runner)を登録するために必要なトークンを確認します。
-  - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択します。
-  - 「Use the following registration token during setup」に記載のトークンをコピーします。
+- ビルド結果の通知設定を行います。
+  - 画面左上の「Gitlab」(アイコン)＞「sample/jakartaee-hello-world」を選択します
+  - 「Setting」＞「Webhook」を選択します
+  - 画面下部のProject Hooksの「Delete」を選択します。
+  - 以下の値を設定し、webhookを作成します。
+    - Rocket.Chat側の設定は Rocket.Chatに管理者でログイン後、画面左上のプルダウン＞「Workspace」＞「統合」＞「gitlab」から確認してください。
+    - URL: Rocket.ChatのWebhook URL
+      - プロトコルをHTTPに、ホスト名をCQサーバのURLにしたものを設定します。
+        - 例を示します。
+          ```
+          http://192.0.2.2/rocketchat/hooks/ROCKET_CHAT_TOKEN
+          ```
+    - Secret token: Rocket.Chatのトークンを設定
+    - pipeline events:ON
+    - 「Add webhook」を選択します。
+    - 「Project Hooks」から追加されたwebhookの「Test」＞「Pipeline events」を選択し、接続確認を行います。
 
 - GitLab Runnerを登録します。
+  - 画面左上のアイコン（MainMenu）＞「Admim」＞「CI/CD」＞「Runners」を選択します。
+    - 「New instance runner」を選択します。
+    - runner の情報を設定します。
+      - Operating systems: Linux
+      - Configuration: Run untagged jobs を選択
+      - 「Submit」を選択します。
+    - 登録用のトークンが発行されるのでコピーします。
   - SSHでアクセスします。
     ```
     $ ssh -F .ssh/ssh.config nop-ci
     ```
   - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
     ```
-    $ docker login -u admin -p <変更したパスワード> <CIサーバのIPアドレス>:19081
+    $ docker login -u admin -p <変更したパスワード> <NexusのホストのIPアドレス>:19081
     ```
     - 例を示します。
       ```
-      $ docker login -u admin -p pass123- 10.0.1.9:19081
+      $ docker login -u admin -p pass123- 192.0.2.3:19081
       ```
   - gitlab-runnerコマンドを起動します。
     ```
     $ docker exec -it gitlab-runner gitlab-runner register
     ```
   - 対話式で情報を入力します。
-    - http://<CIサーバのIPアドレス>/gitlabを入力します。以下に例を示します。
+    - http://\<CIサーバのIPアドレス\>/gitlabを入力します。以下に例を示します。
       ```
-      Please enter the gitlab-ci coordinator URL (e.g. https://gitlab.com/):
-      http://10.0.1.9/gitlab
+      Enter the GitLab instance URL (for example, https://gitlab.com/):
+      http://192.0.2.3/gitlab
       ```
     - ブラウザから確認したトークンを入力します。以下に例を示します。
       ```
-      Please enter the gitlab-ci token for this runner:
-      fhEsBxUScX3bWAWLfCWz
+      Enter the registration token:
+      <GITLAB_TOKEN>
       ```
-    - 説明を入力します。改行のみで問題ないです。
+    - ランナー名を入力します。改行のみで問題ないです。
       ```
-      Please enter the gitlab-ci description for this runner:
-      [cc4d40bad12f]:
-      ```
-    - タグを入力します。改行のみで問題ないです。
-      ```
-      Please enter the gitlab-ci tags for this runner (comma separated):
+      Enter a name for the runner. This is stored only in the local config.toml file:
+      [xxxxxxxxxxxx]:
       ```
     - executorの種類を入力します。`docker` と入力します。
       ```
-      Please enter the executor: shell, docker, docker-ssh, parallels, ssh, virtualbox, docker+machine, docker-ssh+machine, custom, kubernetes:
+      Enter an executor: shell, instance, custom, docker-windows, parallels, ssh, virtualbox, docker-autoscaler, docker+machine, kubernetes, docker:
       docker
       ```
-    - CIで使用するDockerイメージのデフォルトを入力します。 `maven:3.6.2-jdk-8` と入力します。
+    - CIで使用するDockerイメージのデフォルトを入力します。 `maven:3.9.3-amazoncorretto-17-debian` と入力します。
       ```
-      Please enter the default Docker image (e.g. ruby:2.6):
-      maven:3.6.2-jdk-8
+      Enter the default Docker image (for example, ruby:2.7):
+      maven:3.9.3-amazoncorretto-17-debian
       ```
   - config.tomlを編集します。
     - viを起動します。
       ```
       $ sudo vi /data/gitlab-runner/config/config.toml
       ```
-    - `clone_url = "http://1<CIサーバのIPアドレス>/gitlab"` を追記します。以下に例を示します。
+    - `clone_url = "http://<CIサーバのIPアドレス>/gitlab"`、`pull_policy = ["if-not-present", "always"]` を追記します。以下に例を示します。
       ```
       (中略)
       [[runners]]
       (中略)
         executor = "docker"
-        clone_url = "http://10.0.1.9/gitlab" 
+        clone_url = "http://192.0.2.3/gitlab" 
         [runners.custom_build_dir]
+      (中略)
+        [runners.docker]
+      (中略)
+          shm_size = 0
+          pull_policy= ["if-not-present", "always"]
       (中略)
       ```
 
 - GitLabにGitLabのCIコンポーネント(GitLab Runner)を登録されたことを確認します。
   - ブラウザでGitLabにアクセスします。
   - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択し、Runnerが存在することを確認します。
-  - 登録した以外のRunnnerが存在する場合、使わないため消します。
-- nablarch-example-webのパイプラインを変更します。
+  - 登録した以外のRunnerが存在する場合、使わないため消します。
+- SonarQubeでトークンを生成します。
+  - SonarQubeに管理者でログインします。
+  - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+  - 画面右上の「Security」を選択します。
+  - 既存のトークンを「Revoke」から削除します。
+  - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
+    - Name: ci
+    - Type: Global Analysis Token
+    - Expires in : No expiration
+  - 生成されたトークンをコピーして保持します。
+- jakartaee-hello-worldのパイプラインを変更します。
   - GibLabにnopユーザでログインします。
     - Username: nop
     - Password: pass456-
-  - 「sample/nablarch-example-web」を選択します。
-  - 画面中央にあるリポジトリのURLをコピーします。
+  - 「sample/jakartaee-hello-world」を選択します。
+  - 画面中央にある「clone」をクリックし、リポジトリのURLをコピーします。
   - 作業PCの適当な場所にgit cloneします。
     - ユーザ名/パスワードを聞かれるのでnopユーザを指定します。
     - 503エラーとなった場合は環境変数no_proxyにCIサーバのホストを設定します。
       ```
-      $ export no_proxy=26.247.135.132
+      $ export no_proxy=192.0.2.3
       ```
-  - いくつか設定ファイルを変更していくので、IDEでnablarch-example-web(Mavenプロジェクト)を開きます。
+  - いくつか設定ファイルを変更していくので、jakartaee-hello-world(Mavenプロジェクト)を開きます。
   - ブランチを「develop」に切り替えます。
   - パイプラインのパラメータを変更します。
     ```
-    nablarch-example-web/.gitlab-ci.yml
+    jakartaee-hello-world/.gitlab-ci.yml
     ```
-    - イメージの取得元と環境変数を修正します。
+    - 環境変数を修正します。
       ```
-      image: <CIサーバのホスト>:19081/maven-jdk-8-with-sshpass-on-docker
+      image: <CIサーバのホスト>:19081/maven-jdk-17-with-sshpass-on-docker
       (中略)
       variables:
-        SONAR_HOST_URL: <SonarQubeのURL>'
+        SONAR_HOST_URL: <SonarQubeのURL>
+        SONAR_TOKEN: <SonarQubeのトークン>
         DEMO_HOST: <Demoサーバのホスト>
         DEMO_PORT: <DemoサーバのSSHのポート番号>
         DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
         DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+        CI_HOST: <CIサーバのホスト>
+        NEXUS_USER: <Nexusのユーザ名>
+        NEXUS_PASSWORD: <Nexusのパスワード>
       ```
       - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
       - パラメータの設定は以下のような感じになります。  
         imageはNexusから取得するので、CIサーバのIPアドレスを指定してください。
         ```
-        image: 10.0.1.93:19081/maven-jdk-8-with-sshpass-on-docker
+        image: 192.0.2.3:19081/maven-jdk-17-with-sshpass-on-docker
         (中略)
         variables:
-          SONAR_HOST_URL: 10.0.1.118
-          DEMO_HOST: 10.0.1.88
+          SONAR_HOST_URL: 192.0.2.2
+          SONAR_TOKEN: SONARQUBE_TOKEN
+          DEMO_HOST: 192.0.2.4
           DEMO_PORT: 22
-          DEMO_USERNAME: centos
+          DEMO_USERNAME: ec2-user
           DEMO_PASSWORD: pass789-
+          CI_HOST: 192.0.2.3
+          NEXUS_USER: admin
+          NEXUS_PASSWORD: pass123-
         ```
   - パイプラインで使うMavenの設定を変更します。
     ```
-    nablarch-example-web/ci/settings.xml
+    jakartaee-hello-world/ci/settings.xml
     ```
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
     - パラメータの設定は以下のような感じになります。
@@ -952,7 +1199,7 @@ home
         <mirrors>
           <mirror>
             <!-- 中略 -->
-            <url>http://10.0.1.93/nexus/repository/maven-public/</url>
+            <url>http://192.0.2.3/nexus/repository/maven-public/</url>
             <!-- 中略 -->
           </mirror>
         </mirrors>
@@ -964,11 +1211,30 @@ home
   - CI結果（テスト、デプロイなど）はRocket.Chatに通知されます。
   - 「Deploy_Job」まで成功すると、デプロイされたアプリにアクセスできます。ブラウザでアクセスします。
     ```
-    <DEMOサーバのホスト>/
+    <DEMOサーバのホスト>/jakartaee-hello-world
     ```
-    - ログインID: 10000001
-    - パスワード: pass123-
+    - payara のデモページが表示されます。
 
+- ブランチ push-docker-image にも同様に修正、pushを行います。
+  - プロキシ環境下の場合は、プロキシの設定を行います。
+    - パイプラインのパラメータを変更します。
+      ```
+      jakartaee-hello-world/.gitlab-ci.yml
+      ```
+      - jib:build の実施時にproxyの設定を追加します。
+        追加する引数は以下になります。
+        - `-Dhttp.proxyHost=<プロキシサーバのIPアドレス>`
+        - `-Dhttp.proxyPort=<プロキシサーバのポート番号>`
+        - `-Dhttps.proxyHost=<プロキシサーバのIPアドレス>`
+        - `-Dhttps.proxyPort=<プロキシサーバのポート番号>`
+        - `-Dhttp.nonProxyHosts=${CI_HOST}
+      - こんな感じになります。
+        ```
+        sh 'mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -Dhttp.proxyHost=192.0.2.1 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=192.0.2.1 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=${CI_HOST} -s ci/settings.xml'
+        ```
+  - 「Push_Docker_Image_Job」まで成功すると、dockerイメージがnexusにpushされます。
+    - nexusにアクセスします。
+    - 「Browse」＞「docker-hosted」＞「v2/jakartaee-hello-world/manifests」に作成したdockerイメージの情報が追加されていることを確認します。
 
 
 # リカバリに備えてAMIを作成します
