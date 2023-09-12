@@ -4,7 +4,7 @@ services:
 
   proxy:
     container_name: proxy
-    image: httpd:2.2.34-alpine
+    image: httpd:2.4.57-alpine
     restart: always
     env_file: ./common.env
     environment:
@@ -49,21 +49,18 @@ services:
     container_name: gitbucket
     build:
       context: ./dockerfiles/gitbucket
-      args:
-        HTTP_PROXY: $HTTP_PROXY
-        HTTPS_PROXY: $HTTPS_PROXY
-        http_proxy: $http_proxy
-        https_proxy: $https_proxy
     restart: always
     env_file: ./common.env
     environment:
       GITBUCKET_OPTS: --prefix=/gitbucket
+      GITBUCKET_EXTRA_DEPS:  "git procps"
       GITBUCKET_DB_URL: jdbc:postgresql://gitbucket-db/gitbucket
       GITBUCKET_DB_USER: gitbucket
       GITBUCKET_DB_PASSWORD: gitbucket
       no_proxy: proxy
     volumes:
       - ./wait-for:/gitbucket/wait-for
+      - ./gitbucket.sh:/opt/gitbucket.sh
       - /data/gitbucket/repositories:/gitbucket/repositories
       - /data/gitbucket/data:/gitbucket/data
     depends_on:
@@ -76,7 +73,7 @@ services:
 
   gitbucket-db:
     container_name: gitbucket-db
-    image: postgres:9.5.7-alpine
+    image: postgres:15.3-alpine
     restart: always
     env_file: ./common.env
     environment:
@@ -100,6 +97,12 @@ services:
     ports:
       - "8081:8081"
       - "8443:8443"
+      # docker-group-repo (http)
+      - "18081:18081"
+      # docker-group-repo (https)
+      - "18444:18444"
+      # docker-hosted-repo (http)
+      - "19081:19081"
     volumes:
       - /data/nexus:/nexus-data
     logging:

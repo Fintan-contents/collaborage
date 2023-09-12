@@ -1,4 +1,4 @@
-FROM alpine:3.10.3
+FROM alpine:3.18.0
 
 # Install and configure Apache WebDAV and Subversion
 RUN apk update && apk --no-cache add apache2 apache2-utils apache2-webdav mod_dav_svn subversion

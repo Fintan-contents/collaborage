@@ -1,4 +1,4 @@
-FROM maven:3.9.3-amazoncorretto-8-debian
+FROM maven:3.9.3-amazoncorretto-17-debian
 
 # RUN echo "Acquire::http::proxy \"http://26.247.64.251:3128\";\nAcquire::https::proxy \"http://26.247.64.251:3128\";" > /etc/apt/apt.conf
 

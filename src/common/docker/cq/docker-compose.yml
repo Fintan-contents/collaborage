@@ -4,7 +4,7 @@ services:
 
   proxy:
     container_name: proxy
-    image: httpd:2.2.34-alpine
+    image: httpd:2.4.57-alpine
     restart: always
     env_file: ./common.env
     environment:
@@ -35,7 +35,7 @@ services:
         http_proxy: $http_proxy
         https_proxy: $https_proxy
     environment:
-    - SVN_REPO=repo
+      - SVN_REPO=repo
     volumes:
       - /data/svn:/var/svn
       - ./svn/etc/apache2/conf.d:/etc/apache2/conf.d
@@ -43,7 +43,8 @@ services:
 
   redmine:
     container_name: redmine
-    image: redmine:3.3.4-passenger
+    build:
+      context: ./dockerfiles/redmine
     restart: always
     env_file: ./common.env
     environment:
@@ -63,7 +64,7 @@ services:
 
   redmine-db:
     container_name: redmine-db
-    image: postgres:9.5.7-alpine
+    image: postgres:15.3-alpine
     restart: always
     env_file: ./common.env
     environment:
@@ -78,13 +79,13 @@ services:
 
   rocketchat:
     container_name: rocketchat
-    image: rocket.chat:2.0.0
+    image: rocket.chat:5.4.9
     restart: always
     env_file: ./common.env
     environment:
-      MONGO_URL: mongodb://rocketchat-db:27017/rocketchat
-      MONGO_OPLOG_URL: mongodb://rocketchat-db:27017/local
-      ROOT_URL: <繝悶Λ繧ｦ繧ｶ縺九ｉrocketchat縺ｫ繧｢繧ｯ繧ｻ繧ｹ縺吶ｋ蝣ｴ蜷医�ｮURL>
+      MONGO_URL: mongodb://rocketchat-db:27017/rocketchat?replicaSet=rs0&directConnection=true
+      MONGO_OPLOG_URL: mongodb://rocketchat-db:27017/local?replicaSet=rs0&directConnection=true
+      ROOT_URL: <ブラウザからrocketchatにアクセスする場合のURL>
     volumes:
       - /data/rocketchat:/app/uploads
     depends_on:
@@ -96,10 +97,10 @@ services:
 
   rocketchat-db:
     container_name: rocketchat-db
-    image: mongo:3.6.9
+    image: mongo:6.0.6
     restart: always
     env_file: ./common.env
-    command: mongod --smallfiles --oplogSize 128 --replSet rs0 --storageEngine=mmapv1
+    command: mongod --oplogSize 128 --replSet rs0
     volumes:
       - /data/rocketchat-db:/data/db
     logging:
@@ -110,20 +111,20 @@ services:
   # this container's job is just run the command to initialize the replica set.
   # it will run the command and remove himself (it will not stay running)
   mongo-init-replica:
-    image: mongo:3.6.9
-    command: 'bash -c "for i in `seq 1 30`; do mongo rocketchat-db/rocketchat --eval \"rs.initiate({ _id: ''rs0'', members: [ { _id: 0, host: ''localhost:27017'' } ]})\" && s=$$? && break || s=$$?; echo \"Tried $$i times. Waiting 5 secs...\"; sleep 5; done; (exit $$s)"'
+    image: mongo:6.0.6
+    command: 'bash -c "for i in `seq 1 30`; do mongosh rocketchat-db/rocketchat --eval \"rs.initiate({ _id: ''rs0'', members: [ { _id: 0, host: ''localhost:27017'' } ]})\" && s=$$? && break || s=$$?; echo \"Tried $$i times. Waiting 5 secs...\"; sleep 5; done; (exit $$s)"'
     depends_on:
       - rocketchat-db
 
   sonarqube:
     container_name: sonarqube
-    image: sonarqube:6.7.5-alpine
+    image: sonarqube:10.1.0-community
     restart: always
     env_file: ./common.env
     environment:
-      SONARQUBE_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
-      SONARQUBE_JDBC_USERNAME: sonar
-      SONARQUBE_JDBC_PASSWORD: sonar
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
     volumes:
       - ./sonar.properties:/opt/sonarqube/conf/sonar.properties
       - /data/sonarqube/data:/opt/sonarqube/data
@@ -138,7 +139,7 @@ services:
 
   sonarqube-db:
     container_name: sonarqube-db
-    image: postgres:9.5.7-alpine
+    image: postgres:15.3-alpine
     restart: always
     env_file: ./common.env
     environment:
