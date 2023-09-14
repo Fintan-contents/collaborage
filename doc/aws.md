@@ -3,7 +3,7 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
-Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。  
+Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、[Collaborage 1.1.0版の「マイグレーション」](https://github.com/Fintan-contents/collaborage/blob/1.1.0/doc/aws.md#%E3%83%9E%E3%82%A4%E3%82%B0%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)に進んでください。  
 GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAutoscaling」に進んでください。
 
 - [アーキテクチャ](#アーキテクチャ)
@@ -56,7 +56,7 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 - CQ/CIサーバのディスク使用率のみ監視します。（Demoサーバは監視しません）
 - CQ/CIサーバのCloudWatchAgentで、メトリクス(ディスク使用率)をCloudWatchに送信します。
 - デフォルトは5分間隔で送信します。
-  - メトリクス取得の詳細は、[Amazon EC2 Linux インスタンスのメモリとディスクのメトリクスのモニタリング](http://docs.aws.amazon.com/ja_jp/AWSEC2/latest/UserGuide/mon-scripts.html)を参照してください。
+  - メトリクス取得の詳細は、[CloudWatch エージェントを使用して Amazon EC2 インスタンスとオンプレミスサーバーからメトリクス、ログ、トレースを収集する](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html)を参照してください。
   - どこかの処理で失敗すると、AWS CLIを使ってSNSのトピックにメッセージを発行します。
     - SNSのトピックにサブスクリプションとしてemailを設定しておくことで、メール通知を実現します。
 - CloudWatchでアラーム及びルールを手動で設定し、以下の場合にメール送信（SNS経由）します。

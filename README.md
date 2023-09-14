@@ -107,7 +107,7 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
   - Maven/Dockerリポジトリ
     - ![](doc/images/nexus-repository.png)
   - パイプライン
-    - CIのサンプル([Nablarch](https://github.com/nablarch/nablarch)の[Example](https://github.com/nablarch/nablarch-example-web))が入っているので、参考にして、すぐに開発を始められます
+    - CIのサンプルが入っているので、参考にして、すぐに開発を始められます
       - Jenkins
         - ![](doc/images/jenkins-pipeline.png)
         - パイプラインの内容が表形式で表示され、色により成功/失敗を一目で確認できます。

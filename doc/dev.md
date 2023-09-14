@@ -1,7 +1,7 @@
 プロジェクトの開発準備
 ================================
 
-ここでは、[ECLIPSE STARTER FOR JAKARTA EE](https://start.jakarta.ee/)を使って、
+ここでは、[Eclipse starter for jakarta ee](https://start.jakarta.ee/)を使って、
 開発準備を一通り説明しています。
 プロジェクトの開発準備の参考にしてください。
 
@@ -370,7 +370,8 @@
 
 #### 管理者
 
-- パイプラインを準備します。
+- パイプラインを準備します。  
+  develop(warファイルを作成してDemoサイトでデプロイを行うパイプライン)とpush-docker-image（dockerイメージを作成し、Nexusにpushを行うパイプライン）を作成します。
   - SonarQubeでトークンを生成します。
     - SonarQubeに管理者でログインします。
     - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
@@ -381,8 +382,10 @@
       - Expires in : No expiration
     - 生成されたトークンをコピーして保持します。
   - 作業場所でパイプラインをjakartaee-hello-worldにコピーします。
+    以下、developでの設定例です。
+    push-docker-image はパスの「develop」を「push-docker-image」に読み替えます。
     ```
-     $ cp -r pipeline/jenkins/java17/. <jakartaee-hello-worldへのパス>
+     $ cp -r pipeline/jenkins/java17/develop/. <jakartaee-hello-worldへのパス>
     ```
   - いくつか設定ファイルを変更していくので、IDEでjakartaee-hello-world(Mavenプロジェクト)を開きます。
   - ブランチをdevelopに切り替えます。
@@ -468,9 +471,6 @@
         DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
         DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
         PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
-        CI_HOST = '<CIサーバのホスト>'
-        NEXUS_USER = '<Nexusのユーザ名>'
-        NEXUS_PASSWORD = '<Nexusのパスワード>'
       }
       ```
     - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
@@ -484,30 +484,9 @@
         DEMO_USERNAME = 'ec2-user'
         DEMO_PASSWORD = 'pass789-'
         PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
-        CI_HOST = '192.0.2.5'
-        NEXUS_USER = 'admin'
-        NEXUS_PASSWORD = 'pass123-'
       }
       ```
-- JenkinsにJDKを追加します。
-  - Jenkinsに管理者でログインします。
-  - 「Jenkinsの管理」＞「Tools」を選択します。
-  - 「JDK追加」をクリックします。入力欄が表示されます。
-  - 「インストーラーの削除」をクリックし、「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
-  - 各項目を入力します。
-    - 名前: JDK17
-    - 自動インストール: on
-    - *.zip/*.tar.gz展開
-      - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
-        以下に例を示します。
-        ```
-        https://download.oracle.com/java/17/archive/jdk-17.0.7_linux-x64_bin.tar.gz
-        ```
-      - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
-        以下に例を示します。
-        ```
-        jdk-17.0.7
-        ```
+
 - Jenkinsにジョブを作成します。
   - Jenkinsに管理者でログインします。
   - Multibranch Pipelineを作成します。
@@ -539,8 +518,26 @@
       ```
       <DEMOサーバのホスト>/jakartaee-hello-world/rest/hello
       ```
-  - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）は同様の手順を実施します。
+  - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）も同様の手順を実施します。  
     - pushする前に不要なディレクトリ（`jakartaee-hello-world/ci/deploy-to-demo`）を削除します。
+    - 環境変数には追加で以下の値を設定します。
+      ```
+      environment {
+        (略)
+        CI_HOST = '<CIサーバのホスト>'
+        NEXUS_USER = '<Nexusのユーザ名>'
+        NEXUS_PASSWORD = '<Nexusのパスワード>'
+      }
+      ```
+    - こんな感じになります。
+      ```
+      environment {
+        (略)
+        CI_HOST = '192.0.2.5'
+        NEXUS_USER = 'admin'
+        NEXUS_PASSWORD = 'pass123-'
+      }
+      ```
 
 ### GitLabでのCI追加
 
@@ -661,7 +658,8 @@
   - 画面左上のアイコン（MainMenu）＞「Admin」＞「CI/CD」＞「Runners」を選択し、Runnerが存在することを確認します。
   - 登録した以外のRunnerが存在する場合、使わないため消します。
 
-- パイプラインを準備します。
+- パイプラインを準備します。  
+  develop(warファイルを作成してDemoサイトでデプロイを行うパイプライン)とpush-docker-image（dockerイメージを作成し、Nexusにpushを行うパイプライン）を作成します。
   - SonarQubeでトークンを生成します。
     - SonarQubeに管理者でログインします。
     - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
@@ -672,8 +670,10 @@
       - Expires in : No expiration
     - 生成されたトークンをコピーして保持します。
   - 作業場所でパイプラインをjakartaee-hello-worldにコピーします。
+    以下、developでの設定例です。
+    push-docker-image はパスの「develop」を「push-docker-image」に読み替えます。
     ```
-    $ cp -r pipeline/gitlab/java17/. <jakartaee-hello-worldへのパス>
+    $ cp -r pipeline/gitlab/java17/develop/. <jakartaee-hello-worldへのパス>
     ```
   - いくつか設定ファイルを変更していくので、jakartaee-hello-world(Mavenプロジェクト)を開きます。
   - ブランチをdevelopに切り替えます。
@@ -761,9 +761,7 @@
         DEMO_PORT: <DemoサーバのSSHのポート番号>
         DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
         DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
-        CI_HOST: <CIサーバのホスト>
-        NEXUS_USER: <Nexusのユーザ名>
-        NEXUS_PASSWORD: <Nexusのパスワード>
+
       ```
        - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
     - こんな感じになります。
@@ -798,6 +796,21 @@
   - GitLabが変更を検知し、ビルドが実行されます。
   - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）は同様の手順を実施します。。
     - pushする前に不要なディレクトリ（`jakartaee-hello-world/ci/deploy-to-demo`）を削除します。
-
+    - 環境変数には追加で以下の値を設定します。
+      ```
+      variables:
+        (略)
+        CI_HOST: <CIサーバのホスト>
+        NEXUS_USER: <Nexusのユーザ名>
+        NEXUS_PASSWORD: <Nexusのパスワード>
+      ```
+    - こんな感じになります。
+      ```
+      variables:
+        (略)
+        CI_HOST: 192.0.2.3
+        NEXUS_USER: admin
+        NEXUS_PASSWORD: pass123-  
+      ```
 これで開発準備は終わりです！
 お疲れさまでしたー

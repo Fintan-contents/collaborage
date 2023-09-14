@@ -209,7 +209,7 @@
     - Saveします。
 - Maven/Dockerリポジトリを追加します。
   - 画面左上の「歯車(Server administration and configuration)」アイコン＞「Repositorites」＞「CreateRepository」を選択します。
-    - nablarch-example-webで必要となる3つのリポジトリを作成します。
+    - リポジトリを作成します。
       - seasar
         - Recipe: maven2(proxy)
         - Name: seasar

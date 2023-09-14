@@ -18,7 +18,7 @@ AMIから作成したEC2インスタンスの初期設定
 # 各サーバの状態を理解します
 
 
-AMIは、次の手順で作成し、[Nablarch](https://github.com/nablarch/nablarch)の[Example](https://github.com/nablarch/nablarch-example-web)のCIを組み込んであります。
+AMIは、次の手順で作成し、[Eclipse starter for jakarta ee](https://start.jakarta.ee/)のサンプルプロジェクトにユニットテスト、コード解析、デプロイ、Dockerイメージ作成のCIを組み込んであります。
 
 - [OSの初期設定～アプリのインストール](app.md)
 - [アプリの初期設定](init.md)
@@ -38,7 +38,7 @@ AMIは、次の手順で作成し、[Nablarch](https://github.com/nablarch/nabla
   - jenkins/pass456-（Rocket.Chat）
     - JenkinsからCI結果を通知するためのユーザ
 - プロジェクト/リポジトリ
-  - nablarch-example-web（Redmine、GitBucket、GitLab）
+  - jakartaee-hello-world（Redmine、GitBucket、GitLab）
     - sampleグループに割り当て済みです。
 
 各サーバのディレクトリ構成は以下になります。
@@ -63,7 +63,7 @@ Demoサーバ
 ```
 home
   ec2-user
-    app         … アプリのデプロイ先です。Executable Jarをdockerで立ち上げています。
+    app         … アプリのデプロイ先です。Warをdockerで立ち上げています。
 ```
 
 # データボリュームを定期的にバックアップするように設定します
@@ -735,7 +735,8 @@ home
       - API: DisableAlarmActions
       - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config3.png)
     - DisableAlarmActionsを設定します。
-      - DisableAlarmActionsを設定します: 以下を設定
+      - 作成したアラームの名称を設定します。
+        以下、設定例です。
         ```shell
         {
           "AlarmNames": [
@@ -952,7 +953,6 @@ home
     ```
     - 環境変数を修正します。
       ```
-      image: <CIサーバのホスト>:19081/maven-jdk-17-with-sshpass-on-docker
       (中略)
       environment {
         SONAR_HOST_URL = '<SonarQubeのURL>'
@@ -970,7 +970,6 @@ home
       - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
       - こんな感じになります。
         ```
-        image: 192.0.2.3:19081/maven-jdk-17-with-sshpass-on-docker
         (中略)
         environment {
           SONAR_HOST_URL = 'http://192.0.2.2/sonarqube'

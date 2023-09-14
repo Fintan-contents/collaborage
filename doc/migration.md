@@ -4,7 +4,18 @@
 ここでは、既存のCollaborage環境からCollaborage 2.0.0環境へのデータ移行を行います。
 
 # 前提
-- 各ミドルウェアのマイグレーション前後のバージョンは下記を想定しています。
+- 各ミドルウェアのマイグレーション前後のバージョンは下記を想定しています。  
+  移行形態はそれぞれ以下の内容を指します。
+  - 完全移行  
+    移行元環境でのデータを完全に移行します。
+  - 一部以降  
+    移行元環境でのデータを可能な限り移行しますが、一部個別の移行手順・再インストールが必要になります。  
+    個別での移行が必要になるものは以下となります。
+    - Redmine: 追加でインストールしたプラグイン
+    - SonarQube: 追加でインストールしたプラグイン
+  - パイプライン再作成＋参照環境作成  
+    パイプラインのデータの移行を行うとエラーが発生するため、手動での再登録を行います。  
+    その際、移行元のアプリの参照を行えるよう参照用環境を作成します。
   
   | サーバ | コンテナ　                           | 変更前　    | 変更後　     | 移行形態             |
   |:----|:--------------------------------|---------|:---------|:-----------------| 
@@ -17,7 +28,7 @@
   |     | Rocket.Chat                     | 2.0.0   | 5.4.9    | 移行対象データなし　       |
   |     | Rocket.Chat DB(MongoDB)         | 3.6.9   | 6.0.6    | 完全移行             |
   |     | Rocket.Chat レプリケーションDB(MongoDB) | 3.6.9   | 6.0.6    | 移行対象データなし        |
-  |     | SonarQube(Community Edition)    | 6.7.5   | 10.1.0   | 移行対象データなし        |
+  |     | SonarQube(Community Edition)    | 6.7.5   | 10.1.0   | 一部移行             |
   |     | SonarQube DB(PostgreSQL)        | 9.5.7   | 15.3     | 完全移行             |
   | CI  | Apache HTTP Server              | 1.14.0  | 2.4.57   | 移行対象データなし        |
   |     | Jenkins                         | 2.190.3 | 2.401.1  | パイプライン再作成＋参照環境作成 |
@@ -141,10 +152,6 @@
 - Redmineのマイグレーションを実施します。
 - pluginの移行を行います。
 
-### 参考
-- [Backing up and restoring Redmine](https://www.redmine.org/projects/redmine/wiki/RedmineBackupRestore)
-- [Redmineガイド - アップグレード](http://guide.redmine.jp/RedmineUpgrade/)
-
 ### 手順
 - 移行元サーバーでバックアップを作成します。
   - SSHで移行元のCQサーバーに接続します。
@@ -223,7 +230,7 @@
     ```
     $ exit
     ```
-- pluginの再インストールをします。
+- pluginの移行を行います。
   - collaborage環境作成後にpluginの追加インストールを行っている場合、pluginごとに案内されている手順に従ってデータ移行を行うか、設定を保存した上で再インストールを行ってください。
 - 動作確認を行います。
   - ブラウザでアクセスします。
@@ -232,14 +239,15 @@
     ```
   - ログインしてデータの移行ができていることを確認します。
 
+### 参考
+- [Backing up and restoring Redmine](https://www.redmine.org/projects/redmine/wiki/RedmineBackupRestore)
+- [Redmineガイド - アップグレード](http://guide.redmine.jp/RedmineUpgrade/)
+
 ## Rocket.Chat
 ### 概要
 - 下記データのバックアップ＋リストアを実施します。
   - データベース
 - Rocket.Chat のマイグレーションを行います。
-
-### 参考
-- [Docker Mongo Backup and Restore](https://docs.rocket.chat/deploy/prepare-for-your-deployment/rapid-deployment-methods/docker-and-docker-compose/docker-mongo-backup-and-restore)
 
 ### 手順
 - 移行元サーバーでバックアップを作成します。
@@ -325,6 +333,9 @@
     <CQサーバのホスト>/rocketchat
     ```
   - ログインしてデータの移行ができていることを確認します。
+
+### 参考
+- [Docker Mongo Backup and Restore](https://docs.rocket.chat/deploy/prepare-for-your-deployment/rapid-deployment-methods/docker-and-docker-compose/docker-mongo-backup-and-restore)
 
 ## SonarQube
 ### 概要
@@ -547,7 +558,35 @@
     $ exit
     ```
 - アプリの初期設定の[Jenkins](./init.md#jenkins)を参照して、設定を行います。
--  [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。
+  - JDK17以外のバージョンが必要な場合は、以下の手順で追加してください。
+    - Jenkinsに管理者でログインします。
+    - 「Jenkinsの管理」＞「Tools」を選択します。
+    - 「JDK追加」をクリックします。入力欄が表示されます。
+    - 「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
+    - 各項目を入力します。  
+      以下はJDK11を追加する場合の例です。
+      - 名前: JDK11
+      - 自動インストール: on
+      - *.zip/*.tar.gz展開
+        - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
+          以下に例を示します。
+          ```
+          https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+          ```
+        - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
+          以下に例を示します。
+          ```
+          jdk-11.0.2
+          ```
+    - 追加したJDKはJenkinsfileで以下のように設定して利用します。
+      ```
+      pipeline {
+        (略)
+        tools {
+          jdk 'JDK11'
+        }
+      ```
+ - [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。
 - パイプラインを再設定します。
   - パイプラインの設定時、Jenkinsfileで利用中の引数の名称変更・追加があるので、変更を行ってください。
     - environment
@@ -601,7 +640,7 @@
     - 作業PCの適当な場所で次のコマンドを実行します。
       ```
       $ git clone <移行元のリポジトリのURL>
-      $ cd nablarch-example-web/
+      $ cd <プロジェクのトディレクトリ>/
       $ git config --local user.name <作成したユーザのログインID>
       $ git config --local user.email <作成したユーザのメールアドレス>
       $ git remote set-url origin <移行先のリポジトリのURL>
@@ -694,6 +733,10 @@
 
 ## 参照用環境の作成
 必要に応じて参照用の環境を作成します。
+Jenkins、GitLabはマウントディレクトリやDBのリストアを行っても、大きくバージョンが変更されると履歴の閲覧等ができなくなります。
+移行後の環境ではパイプラインを再作成していますが、中には過去のビルドの失敗時履歴を参照したい、といったケースがあることも想定されます。
+そのため、本手順により参照用の環境の作成を案内してします。
+
 ### 概要
 - Jenkins または GitLab の参照用環境を作成します。
   - 移行先の環境にサブディレクトリに参照用環境を作成します。
