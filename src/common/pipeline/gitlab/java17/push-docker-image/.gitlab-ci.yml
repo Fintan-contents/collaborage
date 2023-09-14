@@ -1,0 +1,31 @@
+image: <CIサーバのIPアドレス>:19081/maven-jdk-17-with-sshpass-on-docker
+
+stages:
+  - build
+  - deploy
+
+variables:
+  SONAR_HOST_URL: <SonarQubeのURL>
+  SONAR_TOKEN: <SonarQubeのトークン>
+  DEMO_HOST: <Demoサーバのホスト>
+  DEMO_PORT: <DemoサーバのSSHのポート番号>
+  DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
+  DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
+  CI_HOST: <Demoサーバのホスト>
+  NEXUS_USER: <Nexusのユーザ名>
+  NEXUS_PASSWORD: <Nexusのパスワード>
+
+
+Build_Job:
+  stage: build
+  script:
+    - mvn test -s ci/settings.xml
+    - mvn sonar:sonar -Dsonar.host.url=http://${SONAR_HOST_URL}/sonarqube -Dsonar.token=${SONAR_TOKEN} -Dsonar.projectKey=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -Dsonar.projectName=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -s ci/settings.xml
+
+Push_Docker_Image_Job:
+  stage: push-docker-image
+  only:
+    - push-docker-image
+  script:
+    - mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -s ci/settings.xml
+

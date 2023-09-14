@@ -1,0 +1,61 @@
+pipeline {
+  agent any
+  triggers {
+    pollSCM('*/1 * * * *')
+  }
+  tools {
+    maven 'mvn3'
+    nodejs 'nodeJS18'
+  }
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '3'))
+  }
+  environment {
+    SONAR_HOST_URL = '<SonarQubeのURL>'
+    SONAR_TOKEN = '<SonarQubeのトークン>'
+    DEMO_HOST = '<Demoサーバのホスト>'
+    DEMO_PORT = '<DemoサーバのSSHのポート番号>'
+    DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
+    DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
+    PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
+    CI_HOST = '<Demoサーバのホスト>'
+    NEXUS_USER = '<Nexusのユーザ名>'
+    NEXUS_PASSWORD = '<Nexusのパスワード>'
+  }
+  stages {
+    stage('Unit test') {
+      steps {
+        echo 'Unit test'
+        sh 'mvn test -s ci/settings.xml'
+      }
+      post {
+        always { junit 'target/surefire-reports/**/*.xml' }
+        success { rocketSend message: ":blush: Unit test, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+        failure { rocketSend message: ":sob: Unit test, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+      }
+    }
+    stage('Code analysis') {
+      steps {
+        echo 'Code analysis'
+        sh 'mvn sonar:sonar -s ci/settings.xml -Dsonar.token=${SONAR_TOKEN} -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.projectKey=${PROJECT_KEY} -Dsonar.projectName=${PROJECT_KEY}'
+      }
+      post {
+        success { rocketSend message: ":blush: Code analysis, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+        failure { rocketSend message: ":sob: Code analysis, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+      }
+    }
+    stage('Docker image push to repository') {
+      when {
+        branch 'push-docker-image'
+      }
+      steps {
+        echo 'Create executable war'
+        sh 'mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -s ci/settings.xml'
+      }
+      post {
+        success { rocketSend message: ":blush: Docker image push to repository, ${BUILD_TAG}, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+        failure { rocketSend message: ":sob: Docker image push to repository, ${BUILD_TAG}, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+      }
+    }
+  }
+}

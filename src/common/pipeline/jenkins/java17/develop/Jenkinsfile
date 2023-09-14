@@ -5,8 +5,7 @@ pipeline {
   }
   tools {
     maven 'mvn3'
-    jdk 'JDK17'
-    nodejs 'nodeJS20'
+    nodejs 'nodeJS18'
   }
   options {
     buildDiscarder(logRotator(numToKeepStr: '3'))
@@ -19,9 +18,6 @@ pipeline {
     DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
     DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
     PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
-    CI_HOST = '<Demoサーバのホスト>'
-    NEXUS_USER = '<Nexusのユーザ名>'
-    NEXUS_PASSWORD = '<Nexusのパスワード>'
   }
   stages {
     stage('Unit test') {
@@ -50,7 +46,7 @@ pipeline {
         branch 'develop'
       }
       steps {
-        echo 'Create executable war'
+        echo 'Create war'
         sh 'mvn clean package -s ci/settings.xml'
         echo 'Create app resources'
         sh 'mkdir -p target/app'
@@ -67,19 +63,6 @@ pipeline {
       post {
         success { rocketSend message: ":blush: Deploy to demo, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
         failure { rocketSend message: ":sob: Deploy to demo, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
-      }
-    }
-    stage('Docker image push to repository') {
-      when {
-        branch 'push-docker-image'
-      }
-      steps {
-        echo 'Create executable war'
-        sh 'mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -s ci/settings.xml'
-      }
-      post {
-        success { rocketSend message: ":blush: Docker image push to repository, ${BUILD_TAG}, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
-        failure { rocketSend message: ":sob: Docker image push to repository, ${BUILD_TAG}, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
       }
     }
   }
