@@ -124,7 +124,7 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
       - ![](doc/images/demo-example.png)
     - パイプラインを定義ファイルに記載して、Jenkinsおじさん(属人化)の発生を防ぎます
       - [Jenkins](src/common/pipeline/jenkins/java17/develop/Jenkinsfile)
-      - [GitLab Runner](src/common/pipeline/java17/develop/.gitlab-ci.yml)
+      - [GitLab Runner](src/common/pipeline/gitlab/java17/develop/.gitlab-ci.yml)
       - パイプラインのファイルはアプリと同じVCSにpushして管理するので、変更履歴も簡単に確認できます。
 
 
