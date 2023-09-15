@@ -109,7 +109,7 @@
         - 名前: gitlab
         - プライベート: OFF
         - ユーザを選択: 
-          - rocket.chat
+          - rocket.cat
         - 作ります。
     - GitLabから通知を受け取るWebHook URLを作成します。
       - 画面左上のプルダウン＞「Workspace」＞「統合」＞「新規」を選択します。
@@ -398,6 +398,52 @@
   ```
   $ ssh -F .ssh/ssh.config nop-ci
   ```
+- Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
+  - SSHでアクセスします。
+    ```
+    $ ssh -F .ssh/ssh.config nop-cq
+    ```
+  - /etc/docker/daemon.json を編集します。
+    ```
+    $ sudo vi /etc/docker/daemon.json
+    ```
+  - Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
+    ```
+    {
+      "insecure-registries": ["<NexusのホストのIPアドレス>:19081"]
+    }
+    ```
+    - 設定例を示します。
+      ```
+      {
+        "insecure-registries": ["192.0.2.3:19081"]
+      }
+      ```
+  - Dockerで起動しているアプリを停止し、Dockerを再起動します。
+    - アプリを操作するディレクトリに移動します。
+      ```
+      $ cd ~/nop/docker/ci/
+      ```
+    - アプリを停止します。
+      ```
+      $ docker compose stop
+      ```
+    - Dockerを再起動します。
+      ```
+      $ sudo systemctl restart docker
+      ```
+  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。
+    ```
+    $ docker login <NexusのホストのIPアドレス>:19081
+    username: admin
+    Password: <変更したパスワード> 
+    ```
+    - 例を示します。
+      ```
+      $ docker login -u admin -p pass123- 192.0.2.3:19081
+      username: admin
+      Password: pass123-
+      ```
 - Dockerfileが存在するディレクトリに移動します。
   ```
   $ cd ~/nop/docker/ci/dockerfiles/maven-jdk-17-with-sshpass-on-docker/

@@ -88,7 +88,7 @@
 - 管理者でログインします。
 - 画面左上のアイコン（MainMenu）＞「Admin」＞画面右側の「New Group」を選択します
   - Group name: sample
-  - URL (Optional): sample
+  - Group URL: sample
 - Create groupします。
 
 ## ユーザを追加します
@@ -135,7 +135,7 @@
 #### 管理者
 
 - 管理者でログインします。
-- 「Administrarion」＞「Security」＞画面右の「Create User」を選択します。
+- 「Administrarion」＞「Security」＞「Users」＞画面右の「Create User」を選択します。
   - 必須項目を入力します。
 - 作成します。
 
@@ -373,8 +373,8 @@
 - パイプラインを準備します。  
   develop(warファイルを作成してDemoサイトでデプロイを行うパイプライン)とpush-docker-image（dockerイメージを作成し、Nexusにpushを行うパイプライン）を作成します。
   - SonarQubeでトークンを生成します。
-    - SonarQubeに管理者でログインします。
-    - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+    - SonarQubeにnopユーザでログインします。
+    - 画面右上の「N」アイコンをクリックし、My Accountを選択します。
     - 画面右上の「Security」を選択します。
     - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
       - Name: ci
@@ -520,10 +520,12 @@
       ```
   - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）も同様の手順を実施します。  
     - pushする前に不要なディレクトリ（`jakartaee-hello-world/ci/deploy-to-demo`）を削除します。
-    - 環境変数には追加で以下の値を設定します。
+    - 環境変数には以下の値を設定します。
       ```
       environment {
-        (略)
+        SONAR_HOST_URL = '<SonarQubeのURL>'
+        SONAR_TOKEN = '<SonarQubeのトークン>'
+        PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
         CI_HOST = '<CIサーバのホスト>'
         NEXUS_USER = '<Nexusのユーザ名>'
         NEXUS_PASSWORD = '<Nexusのパスワード>'
@@ -532,7 +534,9 @@
     - こんな感じになります。
       ```
       environment {
-        (略)
+        SONAR_HOST_URL = 'http://192.0.2.2/sonarqube'
+        SONAR_TOKEN = 'SONARQUBE_TOKEN'
+        PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
         CI_HOST = '192.0.2.5'
         NEXUS_USER = 'admin'
         NEXUS_PASSWORD = 'pass123-'
@@ -556,32 +560,6 @@
     - pipeline events:ON
     - 「Add webhook」を選択します。
     - 「Project Hooks」から追加されたwebhookの「Test」＞「Pipeline events」を選択し、接続確認を行います。
-- GitLabのCIコンポーネント(GitLab Runner)を登録します。
-  - Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
-    - SSHでアクセスします。
-      ```
-      $ ssh -F .ssh/ssh.config nop-cq
-      ```
-    - /etc/docker/daemon.json を編集します。
-      ```
-      $ sudo vi /etc/docker/daemon.json
-      ```
-    - Nexusに証明書を登録することなくCIで使用するDockerイメージをPush/Pullできるように、設定を行います。
-      ```
-      {
-        "insecure-registries": ["<NexusのホストのIPアドレス>:19081"]
-      }
-      ```
-      - 設定例を示します。
-        ```
-        {
-          "insecure-registries": ["192.0.2.3:19081"]
-        }
-        ```
-- CIコンポーネント(GitLab Runner)を登録するために必要なトークンを確認します。
-  - 画面左上のアイコン（MainMenu）＞「Admin」＞「CI/CD」＞「Runners」を選択します。
-  - 「Regiter an instance runner」を選択し、「Registration token」に記載のトークンをコピーします。
-
 - GitLab Runnerを登録します。
   - 画面左上のアイコン（MainMenu）＞「Admim」＞「CI/CD」＞「Runners」を選択します。
     - 「New instance runner」を選択します。
@@ -594,14 +572,6 @@
     ```
     $ ssh -F .ssh/ssh.config nop-ci
     ```
-  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。
-    ```
-    $ docker login -u admin -p <変更したパスワード> <NexusのホストのIPアドレス>:19081
-    ```
-    - 例を示します。
-      ```
-      $ docker login -u admin -p pass123- 192.0.2.3:19081
-      ```
   - gitlab-runnerコマンドを起動します。
     ```
     $ docker exec -it gitlab-runner gitlab-runner register
@@ -661,8 +631,8 @@
 - パイプラインを準備します。  
   develop(warファイルを作成してDemoサイトでデプロイを行うパイプライン)とpush-docker-image（dockerイメージを作成し、Nexusにpushを行うパイプライン）を作成します。
   - SonarQubeでトークンを生成します。
-    - SonarQubeに管理者でログインします。
-    - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+    - SonarQubeにnopユーザでログインします。
+    - 画面右上の「N」アイコンをクリックし、My Accountを選択します。
     - 画面右上の「Security」を選択します。
     - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
       - Name: ci
@@ -775,9 +745,6 @@
         DEMO_PORT: 22
         DEMO_USERNAME: ec2-user
         DEMO_PASSWORD: pass789-
-        CI_HOST: 192.0.2.3
-        NEXUS_USER: admin
-        NEXUS_PASSWORD: pass123-       
       ```
   - パイプラインのパラメータを変更します。
     ```
@@ -796,10 +763,11 @@
   - GitLabが変更を検知し、ビルドが実行されます。
   - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）は同様の手順を実施します。。
     - pushする前に不要なディレクトリ（`jakartaee-hello-world/ci/deploy-to-demo`）を削除します。
-    - 環境変数には追加で以下の値を設定します。
+    - 環境変数には以下の値を設定します。
       ```
       variables:
-        (略)
+        SONAR_HOST_URL: <SonarQubeのURL>
+        SONAR_TOKEN: <SonarQubeのトークン>
         CI_HOST: <CIサーバのホスト>
         NEXUS_USER: <Nexusのユーザ名>
         NEXUS_PASSWORD: <Nexusのパスワード>
@@ -807,7 +775,8 @@
     - こんな感じになります。
       ```
       variables:
-        (略)
+        SONAR_HOST_URL: 192.0.2.2
+        SONAR_TOKEN: SONARQUBE_TOKEN
         CI_HOST: 192.0.2.3
         NEXUS_USER: admin
         NEXUS_PASSWORD: pass123-  

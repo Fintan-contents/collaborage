@@ -921,8 +921,8 @@ home
   - 保存します。
 - jakartaee-hello-world のパイプラインを変更します。
   - SonarQubeでトークンを生成します。
-    - SonarQubeに管理者でログインします。
-    - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+    - SonarQubeにnopユーザでログインします。
+    - 画面右上の「N」アイコンをクリックし、My Accountを選択します。
     - 画面右上の「Security」を選択します。
     - 既存のトークンを「Revoke」から削除します。
     - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
@@ -1005,6 +1005,28 @@ home
       ```
       jakartaee-hello-world/Jenkinsfile
       ```
+      - 環境変数には追加で以下の値を設定します。
+        ```
+        environment {
+          SONAR_HOST_URL = '<SonarQubeのURL>'
+          SONAR_TOKEN = '<SonarQubeのトークン>'
+          PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
+          CI_HOST = '<CIサーバのホスト>'
+          NEXUS_USER = '<Nexusのユーザ名>'
+          NEXUS_PASSWORD = '<Nexusのパスワード>'
+        }
+        ```
+        - こんな感じになります。
+        ```
+        environment {
+          SONAR_HOST_URL = 'http://192.0.2.2/sonarqube'
+          SONAR_TOKEN = 'SONARQUBE_TOKEN'
+          PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
+          CI_HOST = '192.0.2.5'
+          NEXUS_USER = 'admin'
+          NEXUS_PASSWORD = 'pass123-'
+        }
+        ```
       - jib:build の実施時にproxyの設定を追加します。
         追加する引数は以下になります。
         - `-Dhttp.proxyHost=<プロキシサーバのIPアドレス>`
@@ -1127,8 +1149,8 @@ home
   - 画面左上の「レンチ(Admin area)」アイコン)＞「Overview」＞「Runners」を選択し、Runnerが存在することを確認します。
   - 登録した以外のRunnerが存在する場合、使わないため消します。
 - SonarQubeでトークンを生成します。
-  - SonarQubeに管理者でログインします。
-  - 画面右上の「A」アイコンをクリックし、My Accountを選択します。
+  - SonarQubeにnopユーザでログインします。
+  - 画面右上の「N」アイコンをクリックし、My Accountを選択します。
   - 画面右上の「Security」を選択します。
   - 既存のトークンを「Revoke」から削除します。
   - 「Generate Tokens」で以下のように入力して「Generate」ボタンをクリックする
@@ -1220,6 +1242,24 @@ home
       ```
       jakartaee-hello-world/.gitlab-ci.yml
       ```
+      - 環境変数には以下の値を設定します。
+        ```
+        variables:
+          SONAR_HOST_URL: <SonarQubeのURL>
+          SONAR_TOKEN: <SonarQubeのトークン>
+          CI_HOST: <CIサーバのホスト>
+          NEXUS_USER: <Nexusのユーザ名>
+          NEXUS_PASSWORD: <Nexusのパスワード>
+        ```
+        - こんな感じになります。
+          ```
+          variables:
+            SONAR_HOST_URL: 192.0.2.2
+            SONAR_TOKEN: SONARQUBE_TOKEN
+            CI_HOST: 192.0.2.3
+            NEXUS_USER: admin
+            NEXUS_PASSWORD: pass123-  
+          ```
       - jib:build の実施時にproxyの設定を追加します。
         追加する引数は以下になります。
         - `-Dhttp.proxyHost=<プロキシサーバのIPアドレス>`
