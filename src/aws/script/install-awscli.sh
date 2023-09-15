@@ -5,11 +5,6 @@ set -euo pipefail
 
 echo "# install-awscli started on ${NOP_APP_ID}"
 
-echo "## update awscli on ${NOP_APP_ID}"
-sudo curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-sudo unzip awscliv2.zip
-sudo ./aws/install --update
-
 echo "## create aws config file on ${NOP_APP_ID}"
 mkdir ~/.aws
 cp config/aws.config ~/.aws/config

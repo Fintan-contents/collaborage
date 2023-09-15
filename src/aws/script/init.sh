@@ -22,6 +22,6 @@ fi
 
 ./install-docker.sh
 
-./set-password-to-amazon-linux.sh
+./set-password-to-ec2-user.sh
 
 echo "# init completed on ${NOP_APP_ID}"

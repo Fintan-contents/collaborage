@@ -8,16 +8,16 @@ echo "# set-password-to-ec2-user started on ${NOP_APP_ID}"
 echo "## set password to ec2-user on ${NOP_APP_ID}"
 
 if [ "${NOP_APP_ID}" == "cq" ]; then
-  AMAZON_LINUX_PASS=${AMAZON_LINUX_CQ_PASS}
+  EC2_USER_PASS=${EC2_USER_CQ_PASS}
 elif [ "${NOP_APP_ID}" == "ci" ]; then
-  AMAZON_LINUX_PASS=${AMAZON_LINUX_CI_PASS}
+  EC2_USER_PASS=${EC2_USER_CI_PASS}
 elif [ "${NOP_APP_ID}" == "demo" ]; then
-  AMAZON_LINUX_PASS=${AMAZON_LINUX_DEMO_PASS}
+  EC2_USER_PASS=${EC2_USER_DEMO_PASS}
 else
   echo "Unknown NOP_APP_ID[${NOP_APP_ID}]"
   exit 1
 fi
 
-sudo sh -c "echo $AMAZON_LINUX_PASS | passwd --stdin ec2-user"
+sudo sh -c "echo $EC2_USER_PASS | passwd --stdin ec2-user"
 
 echo "# set-password-to-ec2-user completed on ${NOP_APP_ID}"

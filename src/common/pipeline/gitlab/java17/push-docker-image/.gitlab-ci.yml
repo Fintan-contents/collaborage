@@ -11,10 +11,6 @@ variables:
   DEMO_PORT: <DemoサーバのSSHのポート番号>
   DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
   DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
-  CI_HOST: <Demoサーバのホスト>
-  NEXUS_USER: <Nexusのユーザ名>
-  NEXUS_PASSWORD: <Nexusのパスワード>
-
 
 Build_Job:
   stage: build

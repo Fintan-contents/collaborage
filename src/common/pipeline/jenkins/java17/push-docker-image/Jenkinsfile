@@ -13,10 +13,6 @@ pipeline {
   environment {
     SONAR_HOST_URL = '<SonarQubeのURL>'
     SONAR_TOKEN = '<SonarQubeのトークン>'
-    DEMO_HOST = '<Demoサーバのホスト>'
-    DEMO_PORT = '<DemoサーバのSSHのポート番号>'
-    DEMO_USERNAME = '<DemoサーバのSSHのユーザ名>'
-    DEMO_PASSWORD = '<DemoサーバのSSHのパスワード>'
     PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")
     CI_HOST = '<Demoサーバのホスト>'
     NEXUS_USER = '<Nexusのユーザ名>'
