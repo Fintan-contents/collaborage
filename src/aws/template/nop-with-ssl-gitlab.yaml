@@ -42,19 +42,19 @@ Parameters:
     # Communication/Qualityインスタンスのインスタンスタイプを指定します。
     Description: Specify the instance type for the Communication / Quality instance
     Type: String
-    Default: m4.large
+    Default: m6i.large # TODO
 
   Ec2TypeForCi:
     # CIインスタンスのインスタンスタイプを指定します。
     Description: Specify the instance type for the CI instance
     Type: String
-    Default: m4.large
+    Default: m6i.xlarge # TODO
 
   Ec2TypeForDemo:
     # Demoインスタンスのインスタンスタイプを指定します。
     Description: Specify the instance type for the Demo instance
     Type: String
-    Default: t2.small
+    Default: t3.small # TODO
 
   BastionSecurityGroup:
     # 踏み台インスタンスのセキュリティグループを選びます。
@@ -180,7 +180,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2Role
-      ImageId: ami-08f754e31be1af50e
+      ImageId: ami-081079861690d6531 # TODO
       InstanceType: !Ref Ec2TypeForCq
       KeyName: !Ref Ec2KeyPair
       SubnetId: !Ref PrivateSubnet
@@ -227,7 +227,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2Role
-      ImageId: ami-00dc8429d331e01e8
+      ImageId: ami-08a25c7eea604b720 # TODO
       InstanceType: !Ref Ec2TypeForCi
       KeyName: !Ref Ec2KeyPair
       SubnetId: !Ref PrivateSubnet
@@ -274,7 +274,7 @@ Resources:
     Type: AWS::EC2::Instance
     Properties:
       IamInstanceProfile: !Ref Ec2Role
-      ImageId: ami-078d9cfedbfcc503b
+      ImageId: ami-0b22f24f854630570 # TODO
       InstanceType: !Ref Ec2TypeForDemo
       KeyName: !Ref Ec2KeyPair
       SubnetId: !Ref PrivateSubnet
