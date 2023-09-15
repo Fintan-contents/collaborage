@@ -55,11 +55,6 @@ Collaborage開発メモ
   $ aws configure
   $ cat ~/.aws/config
 
-  # AWS CLIのキャッシュ(インスタンスID)を削除します。
-  $ ls -l /var/tmp/aws-mon/instance-id
-  $ sudo rm /var/tmp/aws-mon/instance-id
-  $ ls -l /var/tmp/aws-mon/instance-id
-
   # 不要なボリュームを消します。
   $ docker volume prune
   ```
