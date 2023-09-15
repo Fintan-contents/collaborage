@@ -266,21 +266,7 @@ home
     ```
     $ source ~/.bash_profile
     ```
-- プロキシ環境下の場合は、wgetをプロキシ環境下で使うための設定を行います。
-  - 環境変数を追加します。
-    ```
-    $ sudo vi /etc/wgetrc
-    ```
-    - プロキシの設定を追加します。
-      ```
-      HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
-      HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
-      ```
-      - こんな感じになります。
-        ```
-        HTTP_PROXY=http://192.0.2.1:3128
-        HTTPS_PROXY=http://192.0.2.1:3128
-        ```
+
 - プロキシ環境下の場合は、AmazonCloudWathAgentのプロキシの設定を変更します。
   ```
   $  sudo vi /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml
@@ -736,15 +722,6 @@ home
       - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config3.png)
     - DisableAlarmActionsを設定します。
       - 作成したアラームの名称を設定します。
-        以下、設定例です。
-        ```shell
-        {
-          "AlarmNames": [
-            "CQサーバのディスク使用率",
-            "CIサーバのディスク使用率"
-          ]
-        }
-        ```
       - ![EventBridgeのスケジュールの定義](images/aws-ev-schedule-config4.png)
     - 「次へ」を選択します。
     - アクセス許可を設定します。
