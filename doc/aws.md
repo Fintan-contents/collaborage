@@ -3,7 +3,7 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
-Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、[Collaborage 1.1.0版の「マイグレーション」](https://github.com/Fintan-contents/collaborage/blob/1.1.0/doc/aws.md#%E3%83%9E%E3%82%A4%E3%82%B0%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)に進んでください。  
+環境構築後に既存環境のデータを移行する場合はマイグレーションに進んでください
 GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAutoscaling」に進んでください。
 
 - [アーキテクチャ](#アーキテクチャ)

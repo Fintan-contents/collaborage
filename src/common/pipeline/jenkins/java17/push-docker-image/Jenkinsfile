@@ -45,7 +45,7 @@ pipeline {
         branch 'push-docker-image'
       }
       steps {
-        echo 'Create executable war'
+        echo 'Create docker image and push to repository'
         sh 'mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -s ci/settings.xml'
       }
       post {
