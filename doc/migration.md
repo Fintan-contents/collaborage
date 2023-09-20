@@ -241,10 +241,6 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - ログインしてデータの移行ができていることを確認します。
 
-### 参考
-- [Backing up and restoring Redmine](https://www.redmine.org/projects/redmine/wiki/RedmineBackupRestore)
-- [Redmineガイド - アップグレード](http://guide.redmine.jp/RedmineUpgrade/)
-
 ## Rocket.Chat
 ### 概要
 - 下記データのバックアップ＋リストアを実施します。
@@ -337,9 +333,6 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     <CQサーバのホスト>/rocketchat
     ```
   - ログインしてデータの移行ができていることを確認します。
-
-### 参考
-- [Docker Mongo Backup and Restore](https://docs.rocket.chat/deploy/prepare-for-your-deployment/rapid-deployment-methods/docker-and-docker-compose/docker-mongo-backup-and-restore)
 
 ## SonarQube
 ### 概要
