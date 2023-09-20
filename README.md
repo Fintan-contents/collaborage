@@ -9,7 +9,7 @@ Collaborage(コラボレージ)により、チーム開発環境の初期構築�
   - [Collaborageについて](#collaborageについて)
   - [何ができあがるの？](#何ができあがるの)
   - [何ができるの？](#何ができるの)
-  - [グランドデザイン](#グランドデザイン)
+  - [基本方針](#基本方針)
   - [ライセンス](#ライセンス)
 - インストール/オペレーション
   - [AWS編](doc/aws.md)
@@ -36,6 +36,18 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
 できあがるチーム開発環境です。
 
 ![チーム開発環境](doc/images/team-devenv.png)
+
+できあがる環境での各アプリのバージョンです。
+
+| サーバ | アプリ                          | バージョン　  | 
+|:----|:-----------------------------|:--------|
+| CQ  | Redmine                      | 4.2.10  | 
+|     | Rocket.Chat                  | 5.4.9   | 
+|     | SonarQube(Community Edition) | 10.1.0  | 
+| CI  | Jenkins                      | 2.401.1 | 
+|     | GitBucket                    | 4.38.4  | 
+|     | GitLab (Community Edition)   | 16.0.1  | 
+|     | Nexus Repository Manager 3   | 3.55.0  | 
 
 
 ## 何ができるの？
@@ -95,7 +107,7 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
   - Maven/Dockerリポジトリ
     - ![](doc/images/nexus-repository.png)
   - パイプライン
-    - CIのサンプル([Nablarch](https://github.com/nablarch/nablarch)の[Example](https://github.com/nablarch/nablarch-example-web))が入っているので、参考にして、すぐに開発を始められます
+    - CIのサンプルが入っているので、参考にして、すぐに開発を始められます
       - Jenkins
         - ![](doc/images/jenkins-pipeline.png)
         - パイプラインの内容が表形式で表示され、色により成功/失敗を一目で確認できます。
@@ -111,21 +123,19 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
     - CIでデモ環境にデプロイされ、すぐに動作確認できます
       - ![](doc/images/demo-example.png)
     - パイプラインを定義ファイルに記載して、Jenkinsおじさん(属人化)の発生を防ぎます
-      - [Jenkins](src/common/pipeline/jenkins/java8/Jenkinsfile)
-      - [GitLab Runner](src/common/pipeline/gitlab/java8/.gitlab-ci.yml)
+      - [Jenkins](src/common/pipeline/jenkins/java17/develop/Jenkinsfile)
+      - [GitLab Runner](src/common/pipeline/gitlab/java17/develop/.gitlab-ci.yml)
       - パイプラインのファイルはアプリと同じVCSにpushして管理するので、変更履歴も簡単に確認できます。
 
 
-## グランドデザイン
+## 基本方針
 
-
-![グランドデザイン](doc/images/grand-design.png)
 
 - 敷居を下げる。
   - クラウドや採用するツールの使い方を利用者が熟知していることを前提にしない。
   - 技術要素を増やさず、シンプルなものを使用する。
 - 自動化する。
-  - クラウドのテンプレート機能やdocker-composeを使用する。
+  - クラウドのテンプレート機能やdocker composeを使用する。
 - 使い方を明示する。
   - 開発準備
   - ログの確認方法

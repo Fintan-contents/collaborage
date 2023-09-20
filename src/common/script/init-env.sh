@@ -31,9 +31,9 @@ echo "export HTTPS_PROXY=${PROXY}" >> ~/.bash_profile
 echo "export http_proxy=${PROXY}" >> ~/.bash_profile
 echo "export https_proxy=${PROXY}" >> ~/.bash_profile
 
-set +u
+set +uo pipefail
 source ~/.bash_profile
-set -u
+set -uo pipefail
 
 echo "### printenv on ${1}"
 printenv

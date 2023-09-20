@@ -12,7 +12,7 @@ if [ "${NOP_APP_ID}" != "demo" ]; then
   ./init-data-volume.sh
 fi
 
-./init-centos7.sh
+./init-amazon-linux.sh
 
 ./init-cloud-init.sh
 
@@ -22,6 +22,6 @@ fi
 
 ./install-docker.sh
 
-./set-password-to-centos.sh
+./set-password-to-ec2-user.sh
 
 echo "# init completed on ${NOP_APP_ID}"
