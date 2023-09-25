@@ -118,7 +118,7 @@
         - 投稿先チャンネル: #gitlab
         - 投稿者:rocket.cat
         - スクリプトが有効: ON
-        - Script: `https://github.com/malko/rocketchat-gitlab-hook/blob/edb82e61e011e2bbb6a5d8a56045e97a35bfe7ef/gitlab-rocketchat.hooks.js` の内容をコピペします。
+        - Script: `https://docs.rocket.chat/use-rocket.chat/workspace-administration/integrations/gitlab` の内容をコピペします。
         - 画面の一番下まで移動して、変更を保存します。
         - 変更を保存すると「Webhook URL」「Token」が出現します。
         - 「Webhook URL」の「クリップボードへコピー」を選択して、URLをコピーします。後ほどGitLabに設定します。
@@ -434,15 +434,11 @@
       ```
   - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。
     ```
-    $ docker login <NexusのホストのIPアドレス>:19081
-    username: admin
-    Password: <変更したパスワード> 
+    $ docker login -u admin -p <変更したパスワード> <NexusのホストのIPアドレス>:19081
     ```
     - 例を示します。
       ```
       $ docker login -u admin -p pass123- 192.0.2.3:19081
-      username: admin
-      Password: pass123-
       ```
 - Dockerfileが存在するディレクトリに移動します。
   ```

@@ -6,9 +6,9 @@ if [ $# -ne 3 ]; then
   exit 1
 fi
 
-set +u
+set +uo pipefail
 source ~/.bash_profile
-set -u
+set -uo pipefail
 
 SHELL_NAME=$1
 SHELL_FILE_PATH=$2
@@ -26,9 +26,9 @@ ${TARGET_HOST}
 ログの場所:
 ${ERROR_LOG_PATH}"
 
-set +e
+set +uo pipefail
 sh "${SHELL_FILE_PATH}" 2>>"${ERROR_LOG_PATH}"
-set -e
+set -uo pipefail
 
 if [ "$?" != "0" ]; then
   aws sns publish \
