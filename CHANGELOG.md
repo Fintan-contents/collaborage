@@ -21,7 +21,7 @@
 #### 変更
 - AMIのOSをAmazon Linux 2023に変更しました。
 - 各利用ツールを2023年9月時点の最新の安定版にバージョンアップしました。  
-  ただし、Redmineはプラグインの「Redmine Backlogs」が未対応のため、最新の安定版にバージョンアップしていません。
+  ただし、Redmineはプラグインの「Redmine Backlogs」が5.Xに未対応のため、4.2.10 (2023-03-05リリース)を採用しています。
 - GitLab RunnerのAutoscaling機能を利用できるようにしました。
 - メトリクスの取得に利用するツールを、をAmazon CloudWatch モニタリングスクリプトからCloudWatchAgentに変更しました。
   Amazon CloudWatch モニタリングスクリプトが非推奨となったためです。
