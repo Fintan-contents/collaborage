@@ -221,9 +221,14 @@ home
   ```
   - プロキシの設定のみ変更します。
     ```
-    http.proxyHost=26.247.64.251
-    http.proxyPort=3128
+    http.proxyHost=<プロキシサーバのIPアドレス>
+    http.proxyPort=<ポート番号>
     ```
+    - こんな感じになります。
+      ```
+      http.proxyHost=192.0.2.1:3128
+      http.proxyPort=3128
+      ```
 - アプリを作り直します。
   - アプリを操作するディレクトリに移動します。
     ```
@@ -251,7 +256,7 @@ home
       ```
       プロキシの設定がされているのにgemの取得に失敗しているログがでている場合は、外部のサイトが一時的に停止している可能性があります。  
       この場合は数時間おいて、「アプリを停止して削除します」からやり直します。
-   
+
 - トピックのARNを変更します。
   ```
   $ vi ~/.bash_profile
@@ -266,7 +271,21 @@ home
     ```
     $ source ~/.bash_profile
     ```
-
+- プロキシ環境下の場合は、wgetをプロキシ環境下で使うための設定を行います。
+  - 環境変数を追加します。
+    ```
+    $ sudo vi /etc/wgetrc
+    ```
+    - プロキシの設定を追加します。
+      ```
+      HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+      HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>
+      ```
+      - こんな感じになります。
+        ```
+        HTTP_PROXY=http://192.0.2.1:3128
+        HTTPS_PROXY=http://192.0.2.1:3128
+        ```
 - プロキシ環境下の場合は、AmazonCloudWathAgentのプロキシの設定を変更します。
   ```
   $  sudo vi /opt/aws/amazon-cloudwatch-agent/etc/common-config.toml
@@ -309,10 +328,12 @@ home
     - ExecStartコマンドの直前にProxyの設定を追加します。
       ```
       Environment="HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      Environment="HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
       ```
       - こんな感じになります。
         ```
         Environment="HTTP_PROXY=http://192.0.2.1:3128"
+        Environment="HTTPS_PROXY=http://192.0.2.1:3128"
         ```
   - 設定の再読込とDockerの再起動を行います。
     ```
@@ -560,11 +581,13 @@ home
       ```
       Environment="HTTP_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
       Environment="HTTPS_PROXY=http://<プロキシサーバのIPアドレス>:<ポート番号>"
+      Environment="NO_PROXY=<NexusのホストのIPアドレス>"
       ```
       - こんな感じになります。
         ```
         Environment="HTTP_PROXY=http://192.0.2.1:3128"
         Environment="HTTPS_PROXY=http://192.0.2.1:3128"
+        Environment="NO_PROXY=192.0.2.3"
         ```
   - 設定の再読込とDockerの再起動を行います。
     ```
@@ -843,7 +866,7 @@ home
   - 初回表示時、ブラウザが `http://` で始まるURLを表示しようとすることがあります。  
     エラーが発生した場合は、入力通りのプロトコルから始まるURLを表示しようとしているか、確認してください。
 - ブラウザでアクセスしたURLをブックマークしておきます。
-- 管理者でログインします。  
+- 管理者でログインします。
   - 画面右上の「Sign in」を選択します。
     - Username: root
     - Password: pass123-
@@ -961,12 +984,6 @@ home
           NEXUS_PASSWORD = 'pass123-'
         }
         ```
-    - プロキシ環境下の場合は、プロキシの設定を行います。
-      - sh up.sh の実施前に `&& source ~/.bash_profile `を実施します。
-      - こんな感じになります。
-        ```
-        sh 'sshpass -p ${DEMO_PASSWORD} ssh -p ${DEMO_PORT} -oStrictHostKeyChecking=no ${DEMO_USERNAME}@${DEMO_HOST} "cd app && source ~/.bash_profile && sh up.sh"'
-        ```
 - pushします。
 - Jenkinsが変更を検知してジョブが実行されます。
   - CI結果（テスト、デプロイなど）はRocket.Chatに通知されます。
@@ -1062,7 +1079,7 @@ home
     ```
     $ ssh -F .ssh/ssh.config nop-ci
     ```
-  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。  
+  - CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。
     ```
     $ docker login -u admin -p <変更したパスワード> <NexusのホストのIPアドレス>:19081
     ```
@@ -1246,7 +1263,7 @@ home
         - `-Dhttp.nonProxyHosts=${CI_HOST}
       - こんな感じになります。
         ```
-        sh 'mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -Dhttp.proxyHost=192.0.2.1 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=192.0.2.1 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=${CI_HOST} -s ci/settings.xml'
+        - mvn clean package jib:build -DsendCredentialsOverHttp=true -Djib.httpTimeout=0  -Djib.to.image=${CI_HOST}:19081/jakartaee-hello-world -Djib.to.auth.username=${NEXUS_USER} -Djib.to.auth.password=${NEXUS_PASSWORD} -Dhttp.proxyHost=192.0.2.1 -Dhttp.proxyPort=3128 -Dhttps.proxyHost=192.0.2.1 -Dhttps.proxyPort=3128 -Dhttp.nonProxyHosts=${CI_HOST} -s ci/settings.xml'
         ```
   - 「Push_Docker_Image_Job」まで成功すると、dockerイメージがnexusにpushされます。
     - nexusにアクセスします。

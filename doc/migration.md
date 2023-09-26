@@ -32,7 +32,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
   |     | SonarQube(Community Edition)    | 6.7.5   | 10.1.0   | 一部移行             |
   |     | SonarQube DB(PostgreSQL)        | 9.5.7   | 15.3     | -                |
   | CI  | Apache HTTP Server              | 1.14.0  | 2.4.57   | 移行対象データなし        |
-  |     | Jenkins                         | 2.190.3 | 2.401.1  | パイプライン再作成＋参照環境作成 |
+  |     | Jenkins                         | 2.190.3 | 2.414.1  | パイプライン再作成＋参照環境作成 |
   |     | GitBucket                       | 4.31.1  | 4.38.4   | 完全移行             |
   |     | GitBucket DB(PostgreSQL)        | 9.5.7   | 15.3     | -                |
   |     | GitLab (Community Edition)      | 12.4.2  | 16.0.1   | パイプライン再作成＋参照環境作成 |
@@ -48,10 +48,10 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
 - [Redmine](#redmine)
 - [Rocket.Chat](#rocketChat)
 - [SonarQube](#sonarQube)
+- [Nexus](#nexus)
 - [GitBucket](#gitbucket)
 - [Jenkins](#jenkins)
 - [GitLab](#gitlab)
-- [Nexus](#nexus)
 - [参照用環境の作成](#参照用環境の作成)
 - [バックアップの削除](#バックアップの削除)
 
@@ -126,6 +126,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
     $ sudo cp ~/nop/backup/svn/repo.dump /data/svn/
     $ docker exec subversion ash -c "svnadmin load /var/svn/repo/ < /var/svn/repo.dump"
+    $ sudo rm -f /data/svn/repo.dump
     ```
   - コンテナを再起動します。
     ```
@@ -220,13 +221,17 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - マイグレーションコマンドを実行します。
     ```
-    docker compose exec redmine bash -c "bundle exec rake db:migrate RAILS_ENV=production"
-    docker compose exec redmine bash -c "bundle exec rake tmp:cache:clear RAILS_ENV=production"
+    $ docker compose exec redmine bash -c "bundle exec rake db:migrate RAILS_ENV=production"
+    $ docker compose exec redmine bash -c "bundle exec rake tmp:cache:clear RAILS_ENV=production"
     ```
+    - `Could not find gem 'icalendar' in any of the gem sources listed in your Gemfile.`のエラーが発生した場合以下のコマンドを実行した上、再度実行します。
+      ```
+      $ docker compose exec redmine bash -c "gem install icalendar"
+      ```
   - コンテナを再起動します。
     ```
-    docker compose restart redmine
-    ./redmine-sub-uri.sh
+    $ docker compose restart redmine
+    $ ./redmine-sub-uri.sh
     ```
   - SSHを切断します。
     ```
@@ -286,10 +291,12 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - DBのバックアップをリストアします。
     ```
-    $ docker exec -i rocketchat-db sh -c "mongorestore --archive" < ~/nop/backup/rocketchat/rocketchat-db2.dump
+    $ sudo cp ~/nop/backup/rocketchat/rocketchat-db.dump /data/rocketchat-db/
+    $ docker exec rocketchat-db sh -c "mongorestore --archive=data/db/rocketchat-db.dump --drop"
+    $ sudo rm -rf /data/rocketchat-db/rocketchat-db.dump
     ```
   - Rocket.Chat のマイグレーションを行います。  
-    - Rocket.Chat のマイグレーションは特定のバージョンにアップグレード後、docker起動時に自動的に実施されるため、段階的にバージョンアップを行います。
+    - Rocket.Chat のデータのマイグレーションは特定のバージョンにアップグレード後、docker起動時に自動的に実施されるため、段階的にバージョンアップを行います。
       - バージョンアップは「3.9.7」→「4.8.7」→「5.4.9」の順に行います。
     - アプリのコンテナを停止します。
       ```
@@ -299,7 +306,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
       ```
       $ vi docker-compose.yml
       ```
-      - rocketchatのimage、environment、MONGO_OPLOG_URLを修正します。
+      - rocketchatのimage、environmentを修正します。
         - ～ 4.8.7 の場合
           ```
           rocketchat:
@@ -381,8 +388,12 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
   - 既存のデータディレクトリを再作成します。
     ```
     $ sudo su -
-    $ sudo rm -rf /data/sonarqube-db/*
+    $ sudo rm -rf {/data/sonarqube-db/*,/data/sonarqube}
     $ exit
+    $ sudo mkdir -p /data/sonarqube/data
+    $ sudo mkdir -p /data/sonarqube/extensions
+    $ sudo mkdir -p /data/sonarqube/bundled-plugins
+    $ sudo chmod -R 777 /data/sonarqube
     ```
   - DBコンテナを起動します。
     ```
@@ -392,6 +403,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
     $ sudo cp ~/nop/backup/sonarqube/sonarqube-db.dump /data/sonarqube-db/
     $ docker exec sonarqube-db bash -c "pg_restore -U sonar -h localhost -d sonar /var/lib/postgresql/data/sonarqube-db.dump"
+    $ sudo rm -rf /data/sonarqube-db/sonarqube-db.dump
     ```
   - SonarQube のマイグレーションを行います。
     - SonarQube のマイグレーションは特定のバージョンにアップグレード後、docker起動時にブラウザから実行する必要があるため、段階的にバージョンアップを行います。
@@ -404,7 +416,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
       ```
       $ vi docker-compose.yml
       ```
-      - image、environment、MONGO_OPLOG_URLを修正します。
+      - image、environmentを修正します。
         - バージョン: ～ 8.9.9 の場合
           ```
           sonarqube:
@@ -446,225 +458,6 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - ログインしてデータの移行ができていることを確認します。
 
-## GitBucket
-
-### 概要
-- 下記データのバックアップ＋リストアを実施します。
-  - システム設定
-  - ユーザ情報
-  - リポジトリ
-
-### 手順
-- 移行元サーバでバックアップを作成します。
-  - SSHで移行元のCIサーバに接続します。
-  - バックアップ用のディレクトリを作成します。
-    ```
-    $ mkdir ~/nop/backup/gitbucket
-    ```
-  - コンテナを停止します。
-    ```
-    $ cd nop/docker/ci
-    $ docker-compose stop gitbucket
-    ```
-  - DBのバックアップを作成します。
-    ```
-    $ docker exec gitbucket-db bash -c "pg_dump -U gitbucket -h localhost -Fc --file=/var/lib/postgresql/data/gitbucket-db.dump gitbucket"
-    $ sudo mv /data/gitbucket-db/gitbucket-db.dump ~/nop/backup/gitbucket
-    ```
-  - ホームディレクトリのバックアップを作成します。
-    ```
-    $ sudo tar cvzf ~/nop/backup/gitbucket/gitbucket.tar.gz -C /data gitbucket
-    ```
-  - コンテナを起動します。
-    ```
-    $ docker-compose start gitbucket
-    ```
-  - SSHを切断します。
-    ```
-    $ exit
-    ```
-- 移行先サーバでバックアップのリストアを実行します。
-  - SSHで移行先のCIサーバに接続します。
-  - バックアップデータを移行元から移行先に移動します。
-    ```
-    $ scp -r centos@<移行元nop-cq>:nop/backup/gitbucket/ nop/backup/
-    ```
-  - アプリ、DBのコンテナを停止します。
-    ```
-    $ cd ~/nop/docker/ci
-    $ docker compose stop gitbucket gitbucket-db && docker compose rm -f gitbucket gitbucket-db
-    ```
-  - 既存のデータディレクトリを削除します。
-    ```
-    $ sudo su -
-    $ sudo rm -rf {/data/gitbucket/*,/data/gitbucket-db/*}
-    $ exit
-    ```
-  - DBコンテナを起動します。
-    ```
-    $ docker compose up -d gitbucket-db
-    ```
-  - DBのバックアップをリストアします。
-    ```
-    $ sudo cp ~/nop/backup/gitbucket/gitbucket-db.dump /data/gitbucket-db/
-    $ docker exec gitbucket-db bash -c "pg_restore -U gitbucket -h localhost -d gitbucket /var/lib/postgresql/data/gitbucket-db.dump"
-    ```
-  - ホームディレクトリをリストアします。
-    ```
-    $ sudo tar xvfz ~/nop/backup/gitbucket/gitbucket.tar.gz -C /data
-    ```
-  - コンテナを起動します。
-    ```
-    $ docker compose up -d gitbucket
-    ```
-  - SSHを切断します。
-    ```
-    $ exit
-    ```
-- 動作確認を行います。
-  - ブラウザでアクセスします。
-    ```
-    <CIサーバのホスト>/gitbucket
-    ```
-  - ログインしてデータの移行ができていることを確認します。
-
-## Jenkins
-### 概要
-- パイプラインを再登録します。  
-- 既存のデータを参照が必要な場合は移行後のサーバに参照用の環境を作成してください。
-- 手順は[参照用環境の作成](#参照用環境の作成)を参照してください。
-- pluginの移行を行います。
-
-### 手順
-- Jenkinsのデータを削除します。  
-  - SSHで移行先のCIサーバに接続します。
-  - アプリのコンテナを停止します。
-    ```
-    $ cd nop/docker/ci
-    $ docker compose stop jenkins && docker compose rm -f jenkins
-    ```
-  - 既存のデータを削除します。
-    ```
-    $ sudo su -
-    $ sudo rm -rf /data/jenkins/*
-    ```
-  - アプリのコンテナを起動します。
-    ```
-    $ docker compose up -d jenkins
-    ```
-  - SSHを切断します。
-    ```
-    $ exit
-    ```
-- アプリの初期設定の[Jenkins](./init.md#jenkins)を参照して、設定を行います。
-  - JDK17以外のバージョンが必要な場合は、以下の手順で追加してください。
-    - Jenkinsに管理者でログインします。
-    - 「Jenkinsの管理」＞「Tools」を選択します。
-    - 「JDK追加」をクリックします。入力欄が表示されます。
-    - 「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
-    - 各項目を入力します。  
-      以下はJDK11を追加する場合の例です。
-      - 名前: JDK11
-      - 自動インストール: on
-      - *.zip/*.tar.gz展開
-        - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
-          以下に例を示します。
-          ```
-          https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
-          ```
-        - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
-          以下に例を示します。
-          ```
-          jdk-11.0.2
-          ```
-    - 追加したJDKはJenkinsfileで以下のように設定して利用します。
-      ```
-      pipeline {
-        (略)
-        tools {
-          jdk 'JDK11'
-        }
-      ```
- - [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。
-- パイプラインを再設定します。
-  - パイプラインの設定時、Jenkinsfileで利用中の引数の名称変更・追加があるので、変更を行ってください。
-    - environment
-      - `SONAR_TOKEN` を追加します。
-        - SonarQubeのトークンを設定してください。
-        - トークンの設定方法は [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照してください。
-      - `PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")` を追加します。
-        - SonarQubeのプロジェクトキーとして利用します。
-    - Code analysis
-      - `mvn sonar:sonar`の引数を修正します。
-        - `-Dsonar.branch=${BRANCH_NAME}`を削除します。
-        - `-Dsonar.token=${SONAR_TOKEN}`、`-Dsonar.projectKey=${PROJECT_KEY}`、`-Dsonar.projectName=${PROJECT_KEY}`を追加します。
-        - 設定例
-          ```
-          sh 'mvn sonar:sonar -s ci/settings.xml -Dsonar.token=${SONAR_TOKEN} -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.projectKey=${PROJECT_KEY} -Dsonar.projectName=${PROJECT_KEY}'
-          ```
-- pluginの移行を行います。
-  - collaborage環境作成後にpluginの追加インストールを行っている場合、pluginごとに案内されている手順に従ってデータ移行を行うか、設定を保存した上で再インストールを行ってください。
-
-## GitLab
-
-### 概要
-- パイプラインを再登録します。
-- 既存のデータを参照が必要な場合は移行後のサーバに参照用の環境を作成してください。
-  手順は[参照用環境の作成](#参照用環境の作成)を参照してください。
-
-### 手順
-- GitLabのデータを削除します。  
-  - SSHで移行先のCIサーバに接続します。
-  - アプリのコンテナを停止します。
-    ```
-    $ cd nop/docker/ci
-    $ docker compose stop gitlab gitlab-db && docker compose rm -f gitlab gitlab-db
-
-  - 既存のデータを削除します。
-    ```
-    $ sudo su -
-    $ sudo rm -rf /data/gitlab/*
-    ```
-  - アプリのコンテナを起動します。
-    ```
-    $ docker compose up -d gitlab gitlab-db
-    ```
-  - SSHを切断します。
-    ```
-    $ exit
-    ```
-- アプリの初期設定の[GitLab](./init.md#gitlab)を参照して、設定を行います。
-- [GitLabでのリポジトリ追加](./dev.md#gitlabでのリポジトリ追加)を参照して、設定を行います。
-  - 登録するリポジトリは移行元GitLabのリポジトリを利用します。
-    - 作業PCの適当な場所で次のコマンドを実行します。
-      ```
-      $ git clone <移行元のリポジトリのURL>
-      $ cd <プロジェクのトディレクトリ>/
-      $ git config --local user.name <作成したユーザのログインID>
-      $ git config --local user.email <作成したユーザのメールアドレス>
-      $ git remote set-url origin <移行先のリポジトリのURL>
-      $ git push origin master
-      ```
-      - `! [rejected]        master -> master (non-fast-forward)` のようにpushがrejectされた場合、以下のコマンドで push します。
-        ```
-        $ git fetch
-        $ git merge --allow-unrelated-histories origin/master
-        $ git push origin master
-        ```
-- [GitLabでのCI追加](./dev.md#gitlabでのci追加)を参照して、設定を行います。
-  - パイプラインの設定時、.gitlab-ci.ymlで利用中の引数の名称変更・追加があるので、変更を行ってください。
-    - variables
-      - `SONAR_TOKEN` を追加します。
-        - SonarQubeのトークンを設定してください。
-        - トークンの設定方法は [GitLabでのCI追加](./dev.md#gitlabでのci追加)を参照してください。
-    - Build_Job
-      - `mvn sonar:sonar`の引数を修正します。
-        - `-Dsonar.branch=${CI_BUILD_REF_NAME}`を削除します。
-        - `-Dsonar.token=${SONAR_TOKEN}`、`-Dsonar.projectKey=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME}`、`-Dsonar.projectName=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME}`を追加します。
-        - 設定例
-          ```
-          - mvn sonar:sonar -Dsonar.host.url=http://${SONAR_HOST_URL}/sonarqube -Dsonar.token=${SONAR_TOKEN} -Dsonar.projectKey=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -Dsonar.projectName=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -s ci/settings.xml
-          ```
 
 ## Nexus
 
@@ -683,6 +476,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - コンテナを停止します。
     ```
+    $ cd nop/docker/ci
     $ docker-compose stop nexus.repository
     ```
   - nexusのバックアップを作成します。
@@ -732,6 +526,217 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
     ```
   - ログインしてデータの移行ができていることを確認します。
 
+## GitBucket
+
+### 概要
+- 下記データのバックアップ＋リストアを実施します。
+  - システム設定
+  - ユーザ情報
+  - リポジトリ
+
+### 手順
+- 移行元サーバでバックアップを作成します。
+  - SSHで移行元のCIサーバに接続します。
+  - バックアップ用のディレクトリを作成します。
+    ```
+    $ mkdir ~/nop/backup/gitbucket
+    ```
+  - コンテナを停止します。
+    ```
+    $ cd nop/docker/ci
+    $ docker-compose stop gitbucket
+    ```
+  - DBのバックアップを作成します。
+    ```
+    $ docker exec gitbucket-db bash -c "pg_dump -U gitbucket -h localhost -Fc --file=/var/lib/postgresql/data/gitbucket-db.dump gitbucket"
+    $ sudo mv /data/gitbucket-db/gitbucket-db.dump ~/nop/backup/gitbucket
+    ```
+  - ホームディレクトリのバックアップを作成します。
+    ```
+    $ sudo tar cvzf ~/nop/backup/gitbucket/gitbucket.tar.gz -C /data gitbucket
+    ```
+  - コンテナを起動します。
+    ```
+    $ docker-compose start gitbucket
+    ```
+  - SSHを切断します。
+    ```
+    $ exit
+    ```
+- 移行先サーバでバックアップのリストアを実行します。
+  - SSHで移行先のCIサーバに接続します。
+  - バックアップデータを移行元から移行先に移動します。
+    ```
+    $ scp -r centos@<移行元nop-ci>:nop/backup/gitbucket/ nop/backup/
+    ```
+  - アプリ、DBのコンテナを停止します。
+    ```
+    $ cd ~/nop/docker/ci
+    $ docker compose stop gitbucket gitbucket-db && docker compose rm -f gitbucket gitbucket-db
+    ```
+  - 既存のデータディレクトリを削除します。
+    ```
+    $ sudo su -
+    $ sudo rm -rf {/data/gitbucket/*,/data/gitbucket-db/*}
+    $ exit
+    ```
+  - DBコンテナを起動します。
+    ```
+    $ docker compose up -d gitbucket-db
+    ```
+  - DBのバックアップをリストアします。
+    ```
+    $ sudo cp ~/nop/backup/gitbucket/gitbucket-db.dump /data/gitbucket-db/
+    $ docker exec gitbucket-db bash -c "pg_restore -U gitbucket -h localhost -d gitbucket /var/lib/postgresql/data/gitbucket-db.dump"
+    $ sudo rm -rf /data/gitbucket-db/gitbucket-db.dump
+    ```
+  - ホームディレクトリをリストアします。
+    ```
+    $ sudo tar xvfz ~/nop/backup/gitbucket/gitbucket.tar.gz -C /data
+    ```
+  - コンテナを起動します。
+    ```
+    $ docker compose up -d gitbucket
+    ```
+  - SSHを切断します。
+    ```
+    $ exit
+    ```
+- 動作確認を行います。
+  - ブラウザでアクセスします。
+    ```
+    <CIサーバのホスト>/gitbucket
+    ```
+  - ログインしてデータの移行ができていることを確認します。
+
+## Jenkins
+### 概要
+- パイプラインを再登録します。  
+- 既存のデータを参照が必要な場合は移行後のサーバに参照用の環境を作成してください。
+- 手順は[参照用環境の作成](#参照用環境の作成)を参照してください。
+- pluginの移行を行います。
+
+### 手順
+- [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。
+  - JDK17以外のバージョンが必要な場合は、以下の手順で追加してください。
+    - Jenkinsに管理者でログインします。
+    - 「Jenkinsの管理」＞「Tools」を選択します。
+    - 「JDK追加」をクリックします。入力欄が表示されます。
+    - 「インストーラーの追加」プルダウン＞「*.zip/*.tar.gz展開」を選択します。
+    - 各項目を入力します。  
+      以下はJDK11を追加する場合の例です。
+      - 名前: JDK11
+      - 自動インストール: on
+      - *.zip/*.tar.gz展開
+        - アーカイブダウンロードURL: `https://qiita.com/boushi-bird@github/items/49627b6a355ea2dfa57a#インストールするjdkを設定する` を参考に入力します。  
+          以下に例を示します。
+          ```
+          https://download.java.net/java/GA/jdk11/9/GPL/openjdk-11.0.2_linux-x64_bin.tar.gz
+          ```
+        - アーカイブを展開するサブディレクトリ: 前述のサイトを参考にしてを指定します。  
+          以下に例を示します。
+          ```
+          jdk-11.0.2
+          ```
+    - 追加したJDKはJenkinsfileで以下のように設定して利用します。
+      ```
+      pipeline {
+        (略)
+        tools {
+          jdk 'JDK11'
+        }
+      ```
+- パイプラインを再設定します。
+  - パイプラインの設定時、Jenkinsfileで利用中の引数の名称変更・追加があるので、変更を行ってください。
+    - environment
+      - `SONAR_TOKEN` を追加します。
+        - SonarQubeのトークンを設定してください。
+        - トークンの設定方法は [JenkinsでのCI追加](./dev.md#jenkinsでのci追加)を参照してください。
+      - `PROJECT_KEY = "${JOB_NAME}".replaceAll("/", ":")` を追加します。
+        - SonarQubeのプロジェクトキーとして利用します。
+    - Code analysis
+      - `mvn sonar:sonar`の引数を修正します。
+        - `-Dsonar.branch=${BRANCH_NAME}`を削除します。
+        - `-Dsonar.token=${SONAR_TOKEN}`、`-Dsonar.projectKey=${PROJECT_KEY}`、`-Dsonar.projectName=${PROJECT_KEY}`を追加します。
+        - 設定例
+          ```
+          sh 'mvn sonar:sonar -s ci/settings.xml -Dsonar.token=${SONAR_TOKEN} -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.projectKey=${PROJECT_KEY} -Dsonar.projectName=${PROJECT_KEY}'
+          ```
+    - rocketSend message
+      - Rocket.Chatのバージョンアップに伴い、emojiの無効化、Jenkinsへのリンクの無効化が発生しているため、修正します。
+        - 設定例
+          ```
+          post {
+            always { junit 'target/surefire-reports/**/*.xml' }
+            success { rocketSend message: ":blush: Unit test, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+            failure { rocketSend message: ":sob: Unit test, ${JOB_NAME} #${BUILD_ID}, ${BUILD_URL}", rawMessage: true }
+          }
+          ```
+- 既存のパイプラインを削除します。
+  - Jenkinsに管理者でログインします。
+  - 「ダッシュボード」＞「jakartaee-hello-world」を選択します。
+  - 「Multibranch Pipelineの削除」を選択します。
+  - 「はい」を選択します。
+- pluginの移行を行います。
+  - collaborage環境作成後にpluginの追加インストールを行っている場合、pluginごとに案内されている手順に従ってデータ移行を行うか、設定を保存した上で再インストールを行ってください。
+
+## GitLab
+
+### 概要
+- パイプラインを再登録します。
+- 既存のデータを参照が必要な場合は移行後のサーバに参照用の環境を作成してください。
+  手順は[参照用環境の作成](#参照用環境の作成)を参照してください。
+
+### 手順
+- CIサーバにNexusへの認証情報を保存するためにDockerで一度ログインします。
+  ```
+  $ docker login -u admin -p <変更したパスワード> <NexusのホストのIPアドレス>:19081
+  ```
+  - 例を示します。
+    ```
+    $ docker login -u admin -p pass123- 192.0.2.3:19081
+    ```
+- [GitLabでのリポジトリ追加](./dev.md#gitlabでのリポジトリ追加)を参照して、設定を行います。
+  - 登録するリポジトリは移行元GitLabのリポジトリを利用します。
+    - 作業PCの適当な場所で次のコマンドを実行します。
+      ```
+      $ git clone <移行元のリポジトリのURL>
+      $ cd <プロジェクのトディレクトリ>/
+      $ git config --local user.name <作成したユーザのログインID>
+      $ git config --local user.email <作成したユーザのメールアドレス>
+      $ git remote set-url origin <移行先のリポジトリのURL>
+      $ git push origin master
+      ```
+      - `! [rejected]        master -> master (non-fast-forward)` のようにpushがrejectされた場合、以下のコマンドで push します。
+        ```
+        $ git fetch
+        $ git merge --allow-unrelated-histories origin/master
+        $ git push origin master
+        ```
+      - master以外に移行したいブランチがある場合は続けてpushします。
+- ビルド結果の通知設定を行います。  
+  [GitLabでのCI追加](./dev.md#gitlabでのci追加)も参照して作業を行ってください。
+- パイプラインのパラメータを変更します。  
+  [GitLabでのCI追加](./dev.md#gitlabでのci追加)も参照して作業を行ってください。
+  - パイプラインの設定時、.gitlab-ci.ymlで利用中の引数の名称変更・追加があるので、変更を行ってください。
+    - variables
+      - `SONAR_TOKEN` を追加します。
+        - SonarQubeのトークンを設定してください。
+        - トークンの設定方法は [GitLabでのCI追加](./dev.md#gitlabでのci追加)を参照してください。
+    - Build_Job
+      - `mvn sonar:sonar`の引数を修正します。
+        - `-Dsonar.branch=${CI_BUILD_REF_NAME}`を削除します。
+        - `-Dsonar.token=${SONAR_TOKEN}`、`-Dsonar.projectKey=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME}`、`-Dsonar.projectName=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME}`を追加します。
+        - 設定例
+          ```
+          - mvn sonar:sonar -Dsonar.host.url=http://${SONAR_HOST_URL}/sonarqube -Dsonar.token=${SONAR_TOKEN} -Dsonar.projectKey=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -Dsonar.projectName=${CI_PROJECT_NAME}:${CI_COMMIT_REF_NAME} -s ci/settings.xml
+          ```
+- 既存のプロジェクトを削除します。
+  - GitLabに管理者でログインします。
+  - 画面左上のアイコン（MainMenu）＞「Admin」＞「Overview」＞「Projects」を選択します。
+  - 「jakartaee-hello-world」の「Delete」を選択します。
+
+
 ## 参照用環境の作成
 必要に応じて参照用の環境を作成します。
 Jenkins、GitLabはマウントディレクトリやDBのリストアを行っても、大きくバージョンが変更されると履歴の閲覧等ができなくなります。
@@ -760,7 +765,7 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
     ```
   - バックアップを作成します。
     ```
-    $ sudo tar cvzf ~/nop/backup/jenkins.tar.gz -C /data jenkins
+    $ sudo tar cvzf ~/nop/backup/jenkins/jenkins.tar.gz -C /data jenkins
     ```
   - コンテナを起動します。
     ```
@@ -811,7 +816,7 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
         ```
       - jenkins
         ```
-        gitlab:
+        jenkins:
           container_name: jenkins-ref
         ```
     - jenkinsのvolumesを変更します。
@@ -1024,14 +1029,13 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
           image: httpd:2.2.34-alpine
           (略) 
           depends_on:
-            - jenkins
-        #    - gitbucket
+            - gitbucket
         #    - nexus.repository
         ```
   - 設定情報をリストアします。
     ```
     $ sudo mkdir /data/ref 
-    $ sudo tar xvfz ~/nop/backup/gitlab/gitlab.tar.gz  -C /data/refsudo tar xvfz ~/nop/backup/gitlab/gitlab.tar.gz  -C /data/ref
+    $ sudo tar xvfz ~/nop/backup/gitlab/gitlab.tar.gz  -C /data/ref
     $ sudo tar xvfz ~/nop/backup/gitlab/gitlab-db.tar.gz  -C /data/ref
     $ sudo tar xvfz ~/nop/backup/gitlab/gitlab-runner.tar.gz  -C /data/ref
     ```
@@ -1047,7 +1051,9 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
     - ターゲットグループ
       - ターゲットタイプ: インスタンス
       - プロトコル: HTTP
-      - ポート: 参照用ポート番号
+      - ターゲット
+        - インスタンス: CIサーバのインスタンス
+        - ポート：参照用ポート番号
     - ロードバランサー
       - ロードバランサータイプ: アプリケーションロードバランサー
       - VPC: 自身の環境のVPC
@@ -1060,7 +1066,7 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
     - ポートの開放
       - CIサーバのセキュリティグループのインバウンドルールを追加します。
       - 開放済の場合は不要です。
-        - プロトコル: HTTP
+        - プロトコル: カスタムTCP
         - ポート: 参照用ポート番号
         - ソース: 自身の環境のALB用セキュリティグループ
 - 動作確認を行います。
