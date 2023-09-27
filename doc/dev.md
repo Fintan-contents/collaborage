@@ -225,7 +225,7 @@
     - 「Manage access」を選択します。
     - 「Invite members」を選択します
       - Username or email address: 作成したユーザ
-        - Usernameを入力すると候補のユーザーが表示されるので選択します。
+        - Usernameを入力すると候補のユーザが表示されるので選択します。
       - Select a role: Maintainer
           - 開発ユーザはDeveloperでよいのですが、初回のmasterリポジトリへのpushを行うにはMaintainerの必要があります。
       - invite します。
@@ -761,7 +761,7 @@
       ```
   - pushします。
   - GitLabが変更を検知し、ビルドが実行されます。
-  - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）は同様の手順を実施します。。
+  - nexusにdockerイメージをpushするパイプラインのサンプル（`jakartaee-hello-world:push-docker-image`）は同様の手順を実施します。
     - pushする前に不要なディレクトリ（`jakartaee-hello-world/ci/deploy-to-demo`）を削除します。
     - 環境変数には以下の値を設定します。
       ```

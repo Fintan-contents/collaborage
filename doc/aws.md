@@ -28,7 +28,7 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
   - Demoサーバ
 - CQ/CIサーバのEC2はm6i.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
 - Demoサーバはt3.small、ルートボリューム20GBでデフォルト提供します。
-- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
+- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m6i.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
 - **上記のマシンスペックは推奨する最低限のスペックになります。PJの規模に合わせて変更してください。**
 
 
@@ -69,11 +69,12 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 
 ### AWS
 
+- リソースの作成はアジアパシフィック (東京) リージョン（ap-northeast-1）で行います。
 - AWSマネジメントコンソールにアクセスし、図にあるリソースを作成します。
   - ![事前準備](images/aws-prepare-resources.png)
 - 既にある環境にインストールする場合は足りないリソースのみ作成します。
 - ネットワーク構成は[パブリックサブネットとプライベートサブネットを持つ VPC (NAT)](http://docs.aws.amazon.com/ja_jp/AmazonVPC/latest/UserGuide/VPC_Scenario2.html)を参照してください。
-- 各リソースの作成方法はAWSのドキュメントを参照するか、AWS有識者に相談してください。30分～1時間で作成できると思います。
+- 各リソースの作成方法はAWSのドキュメントを参照するか、AWS有識者に相談してください。30分～1時間程度で作成できます。
 - トピックにはemailのサブスクリプションも作成します。
 - ポリシーの作成は以下のjsonを使用してください。
   ```
@@ -250,10 +251,10 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
         - ![IAMのロール](images/aws-iam-role.png)
     - Ec2TypeForCi
       - CIサーバのインスタンスタイプを指定します。
-      - Jenkinsを使う場合は「m6i.large」、GitLabを使う場合は「m6i.xlarge」ぐらいあれば大丈夫だと思います。
+      - Jenkinsを使う場合は「m6i.large」、GitLabを使う場合は「m6i.xlarge」程度が目安です。
     - Ec2TypeForCq
       - Communication/Qualityサーバのインスタンスタイプを指定します。
-      - 「m6i.large」ぐらいあれば大丈夫だと思います。
+      - 「m6i.large」程度が目安です。
     - Ec2TypeForDemo
       - Demoサーバのインスタンスタイプを指定します。
       - PJの要件(APサーバやDBサーバ等)に合わせて指定してください。
@@ -344,13 +345,13 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
   - アクセスできない場合は以下を確認してください。
     - ブラウザは、`https://` から始まるURLを表示しようとしていますか？ `https://` と入力したはずなのに、 `http://` から始まるURLを表示しようとしていることがあります。
     - Route53について以下を確認してください。
-      - 以前使ったサブドメインの名前を使ってませんか？使ったばかりの名前を再利用した場合、アクセスできるようになるまで時間が掛かるかもしれません。
+      - 以前使ったサブドメインの名前を使ってませんか？使ったばかりの名前を再使用した場合、アクセスできるようになるまで時間が掛かることがあります。
       - レコードセットを追加した際のALBの名前は、間違っていませんか？
     - AWSの以下のサービスは稼働していますか？ https://status.aws.amazon.com/ から確認してください。
       - Amazon Elastic Load Balancing
       - Amazon Elastic Compute Cloud
       - Amazon Route 53
-  - これらを確認して問題が無かった場合、ALBやRoute 53が使用可能になるまで、まだ時間が掛かるのかもしれません。10分程度時間おいてから、表示できるか試してください。
+  - これらを確認して問題が無かった場合、ALBやRoute 53が使用可能になるまで、時間が掛かっている可能性があります。10分程度時間おいてから、表示できるか試してください。
 
 
 ### AMIから作成したEC2インスタンスの初期設定を行います

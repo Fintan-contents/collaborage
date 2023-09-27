@@ -1,7 +1,7 @@
 GitLab RunnerのAutoscaling
 ================================
 
-ここでは、[GitLab Runnerの機能であるAutoscaling](https://docs.gitlab.com/runner/configuration/runner_autoscale_aws/)の利用設定を行います。
+ここでは、[GitLab Runnerの機能であるAutoscaling](https://docs.gitlab.com/runner/configuration/runner_autoscale_aws/)の使用設定を行います。
 
 # GitLab RunnerのAutoscaling とは？
 docker-machine を使って、必要に応じてパイプライン実行用のEC2インスタンスの作成・パイプラインの実行が終わったEC2インスタンスの削除を自動的に行います。  
@@ -9,20 +9,20 @@ EC2インスタンスの作成・削除の制御はGitLab Runnerが行います�
 ![](images/aws-gitlab-runner-autoscaling.png)
 
 ここでの作業内容は次の通りです。
-- Collaborage1.1環境をご利用の場合に実施する作業
+- Collaborage1.1環境をご使用の場合に実施する作業
   - [GitLabのバージョンアップをします](#GitLabのバージョンアップをします)
 - プロキシ環境下の場合に実施する作業
   - [AutoScaling用のAMIを作成します](#AutoScaling用のAMIを作成します)
   - [GitLab Runnerのプロキシの設定を修正します](#GitLab-Runnerのプロキシの設定を修正します)
   - [docker.serviceを修正します](#dockerserviceを修正します)
-- [Runner実行用のユーザーを作成します](#Runner実行用のユーザーを作成します)
+- [Runner実行用のユーザを作成します](#Runner実行用のユーザを作成します)
 - [サーバのポートを開放します](#サーバのポートを開放します)
 - [config.tomlを修正します](#configtomlを修正します)
 
-# Collaborage1.1環境をご利用の場合
+# Collaborage1.1環境をご使用の場合
 ## GitLabのバージョンアップをします
 GitLab、GitLab Runnerのバージョンを12.6.0以降に更新します。  
-Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`はGitLab Runner 12.5.0、環境変数NO_PROXYのブロック指定はGitLab Runner 12.6.0から利用可能となるためです。
+Autoscalingで使用するプロパティ`--amazonec2-security-group-readonly`はGitLab Runner 12.5.0、環境変数NO_PROXYのブロック指定はGitLab Runner 12.6.0から使用可能となるためです。
 - docker-compose.ymlを編集します。
   ```
   $ vi ~/nop/docker/ci/docker-compose.yml
@@ -60,9 +60,9 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
 
 ## Autoscaling用のAMIを作成します
 - プロキシ環境下の場合は、Autoscaling用のAMIの設定を変更します。
-  - Autoscalingに利用するインスタンスのAMIは任意のものを指定可能です。  
+  - Autoscalingに使用するインスタンスのAMIは任意のものを指定可能です。  
     プロキシ環境下ではAMIに対してプロキシの設定が必要なため、事前に設定を行ったAMIを準備しておきます。
-- 以下はubuntu20.04を利用する場合のAMI設定例です。  
+- 以下はubuntu20.04を使用する場合のAMI設定例です。  
   ここでの作業内容は次の通りです。
   - [ubuntu20.04のAMIを使ってインスタンスを作成します](#ubuntu2004のAMIを使ってインスタンスを作成します)
   - [パッケージ管理のプロキシの設定を変更します](#パッケージ管理のプロキシの設定を変更します)
@@ -233,10 +233,10 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
     $ sudo systemctl restart docker
     ```
 
-# Runner実行用のユーザーを作成します
-- EC2でインスタンスの起動＋終了が可能なユーザーを作成します。
+# Runner実行用のユーザを作成します
+- EC2でインスタンスの起動＋終了が可能なユーザを作成します。
 - アクセスキーを作成します。
-  - IAMでユーザーを選択します。
+  - IAMでユーザを選択します。
   - 「セキリュティ認証情報」タブを選択します。
   - 「アクセスキー」の「アクセスキーを作成」を選択します。
   - 「主要なベストプラクティスと代替案にアクセスする」を設定します。
@@ -254,7 +254,7 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
   - セキュリティグループが存在しない場合は作成してください。
   - 以降の手順のconfig.tomlで指定するセキュリティグループには、このセキュリティグループを指定します。
   - ポート：2376
-    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
+    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に使用します。
     - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
     - 設定値
       - タイプ: カスタムTCP
@@ -262,7 +262,7 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
       - リソースタイプ: カスタム
       - ソース: CIサーバのセキュリティグループ
   - ポート：22
-    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に利用します。
+    - CIサーバのGitLab RunnerとAutoscalingで起動されたインスタンスの通信に使用します。
     - CIサーバからAutoscalingで起動されたインスタンスへの接続が可能となるように設定します。
     - 設定値
       - タイプ: カスタムTCP
@@ -271,7 +271,7 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
       - ソース: CIサーバのセキュリティグループ
 - CIサーバのセキュリティグループに以下のインバウンドルールを追加します。
   - ポート：19081
-    - CIサーバのnexusからdockerイメージ取得する際に利用します。
+    - CIサーバのnexusからdockerイメージ取得する際に使用します。
     - Autoscalingで起動されたインスタンスからCIサーバへの接続が可能となるように設定します。
     - 設定値
       - タイプ: カスタムTCP
@@ -304,7 +304,7 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
       MachineOptions = [
         "amazonec2-access-key=<取得したアクセスキー>",
         "amazonec2-secret-key=<取得したシークレットアクセスキー>",
-        "amazonec2-ami=<利用するAMIのID>",
+        "amazonec2-ami=<使用するAMIのID>",
         "amazonec2-instance-type=t2.micro",
         "amazonec2-region=<自身の環境のregion>",
         "amazonec2-zone=<自身の環境のAZ>",
@@ -328,15 +328,15 @@ Autoscalingで利用するプロパティ`--amazonec2-security-group-readonly`�
       - MachineOptions: インスタンス詳細設定
         - amazonec2-tags: インスタンスに設定するタグ（key1,value1,key2,value2形式）
         - amazonec2-ami: 
-          - Autoscalingに利用するインスタンスのAMIは任意のものを指定可能なため、利用するAMIのIDを設定します。
-            - 未設定の場合はubuntu 20.04（ami-0a3eb6ca097b78895）が利用されます。
+          - Autoscalingに使用するインスタンスのAMIは任意のものを指定可能なため、使用するAMIのIDを設定します。
+            - 未設定の場合はubuntu 20.04（ami-0a3eb6ca097b78895）が使用されます。
             - プロキシ環境では作成したAMIのIDを設定します。
         - amazonec2-security-group:
           - [サーバのポートを開放します](#サーバのポートを開放します)で作成したセキュリティグループを指定します。
         - amazonec2-security-group-readonly:
           - セキュリティグループの上書き設定です。
           - 未設定の場合セキュリティグループの上書きを行ってしまうので、必ずtrueを設定してください。
-        - amazonec2-request-spot-instance: スポットインスタンスの利用設定
+        - amazonec2-request-spot-instance: スポットインスタンスの使用設定
         - engine-insecure-registry: Nexus.Repositoryからdockerイメージをpullする際httpsから除外するIPを設定
     - 設定例
       ```
