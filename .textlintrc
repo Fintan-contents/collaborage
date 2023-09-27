@@ -1,7 +1,4 @@
 {
-  "plugins": [
-    "rst"
-  ],
   "filters": {
     "comments": true
   },

@@ -63,15 +63,11 @@ Collaborage開発メモ
 # textlintの実行
 doc以下のmdファイルを修正した場合、表記ゆれ、誤字脱字等がないかtextlintでチェックします。
 - textlintインストール
-  - Collaboradeのディレクトリの直下で以下をインストールします。
+  - Collaborageのディレクトリの直下で以下をインストールします。
     - Node.js（v16.16.0で動作確認済み）
     - npmで依存ライブラリをインストールします。
       ```
       npm install
-      ```
-    - [textlint-plugin-rst](https://github.com/jimo1001/textlint-plugin-rst)の依存ライブラリである docutils-ast-writerをインストールします。
-      ```
-      pip install docutils-ast-writer
       ```
 - textlint実行
   - 以下のコマンドでdoc以下のファイルの解析を行います。
