@@ -44,7 +44,7 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
 | CQ  | Redmine                      | 4.2.10  | 
 |     | Rocket.Chat                  | 5.4.9   | 
 |     | SonarQube(Community Edition) | 10.1.0  | 
-| CI  | Jenkins                      | 2.401.1 | 
+| CI  | Jenkins                      | 2.414.1 | 
 |     | GitBucket                    | 4.38.4  | 
 |     | GitLab (Community Edition)   | 16.0.1  | 
 |     | Nexus Repository Manager 3   | 3.55.0  | 
