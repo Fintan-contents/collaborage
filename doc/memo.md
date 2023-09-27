@@ -5,7 +5,7 @@ Collaborage開発メモ
 
 - [AWSの事前準備](aws.md#事前準備)をやります。
 - CloudFormationでnop-with-ssl.yamlを使って作ります。
-  - 以下のインスタンスのImageIdをベースに利用するOSを提供しているAMIのImageIdに修正します。
+  - 以下のインスタンスのImageIdをベースに使用するOSを提供しているAMIのImageIdに修正します。
     - Ec2Cq > Properties > ImageId
     - Ec2Ci > Properties > ImageId
     - Ec2Demo > Properties > ImageId
@@ -59,3 +59,37 @@ Collaborage開発メモ
   $ docker volume prune
   ```
 - CQサーバ、CIサーバのAMIを作ります。
+
+# textlintの実行
+doc以下のmdファイルを修正した場合、表記ゆれ、誤字脱字等がないかtextlintでチェックします。
+- textlintインストール
+  - Collaboradeのディレクトリの直下で以下をインストールします。
+    - Node.js（v16.16.0で動作確認済み）
+    - npmで依存ライブラリをインストールします。
+      ```
+      npm install
+      ```
+    - [textlint-plugin-rst](https://github.com/jimo1001/textlint-plugin-rst)の依存ライブラリである docutils-ast-writerをインストールします。
+      ```
+      pip install docutils-ast-writer
+      ```
+- textlint実行
+  - 以下のコマンドでdoc以下のファイルの解析を行います。
+    ```
+    ./node_modules/.bin/textlint doc
+    ```
+<!-- textlint-disable -->
+- チェック除外対象
+  - 以下は修正対象外とします。
+    - /doc/aws.md
+      - [AWS](aws.md#aws)  利用 => 使用　の表記ゆれ
+        - 画面項目の名称が検知されているため対応不要
+    - /doc/dev.md
+      - [Redmineでのユーザ追加](dev.md#redmineでのユーザ追加) ユーザー => ユーザ　の表記ゆれ
+        - 画面項目の名称が検知されているため対応不要
+      - [Rocket.Chatでのユーザ追加](dev.md#rocketchatでのユーザ追加) ユーザー => ユーザ　の表記ゆれ
+        - 画面項目の名称が検知されているため対応不要
+    - /doc/init.md
+      - [Nexus](init.md#nexus)  repo => repository　の表記ゆれ
+        - URLの一部が検知されているため対応不要
+<!-- textlint-enable -->        

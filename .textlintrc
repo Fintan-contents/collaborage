@@ -1,0 +1,48 @@
+{
+  "plugins": [
+    "rst"
+  ],
+  "filters": {
+    "comments": true
+  },
+  "rules": {
+    "preset-ja-technical-writing": {
+      "sentence-length": false,               // 改行入れてないだけなので
+      "ja-no-mixed-period": false,            // FQCN "foo.bar.Buz"などのピリオドに反応してしまうため
+      "no-doubled-joshi": false,              // そこまで問題なさげなものまでNGになるため
+      "no-exclamation-question-mark": false,  // そんなにカジュアルに!を使わないため（記号としての!に反応してしまう）
+      "max-kanji-continuous-len": {
+        // 連続できる漢字の文字数
+        // Allow max continuous length of kanji
+        // If {current} > max(5), report Error.
+        max: 8,
+          // 以下の単語は例外として無視します
+          allow: [
+            "倍精度浮動小数点数"
+          ]
+      },
+      "no-unmatched-pair": false,
+      "ja-no-redundant-expression": {
+        "dictOptions": {
+          "dict5": {
+            "disabled": true
+          },
+          "dict6": {
+            allows: [
+              "/^\\)を.?実行/",
+              // デフォルトの許可リストは上書きされるので、デフォルト値も追加
+              "/^処理を実行/",
+              "/^[ァ-ヶ]+を.?実行/",
+              "/^[a-zA-Z]+を.?実行/"
+            ]
+          }
+        }
+      }
+    },
+    "prh": {
+      "rulePaths" :[".textlint/conf/prh.yml"],
+    },
+    "terminology": {},
+  },
+
+}
