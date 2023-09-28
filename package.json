@@ -1,0 +1,11 @@
+{
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "patch-package": "^6.4.7",
+    "textlint": "^12.2.1",
+    "textlint-filter-rule-comments": "^1.2.2",
+    "textlint-plugin-rst": "^0.1.1",
+    "textlint-rule-preset-ja-technical-writing": "^7.0.0",
+    "textlint-rule-prh": "^5.3.0"
+  }
+}

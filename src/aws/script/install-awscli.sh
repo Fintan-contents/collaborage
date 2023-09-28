@@ -5,11 +5,6 @@ set -euo pipefail
 
 echo "# install-awscli started on ${NOP_APP_ID}"
 
-echo "## install awscli on ${NOP_APP_ID}"
-sudo curl "https://bootstrap.pypa.io/get-pip.py" -o "get-pip.py"
-sudo python get-pip.py
-sudo pip install awscli
-
 echo "## create aws config file on ${NOP_APP_ID}"
 mkdir ~/.aws
 cp config/aws.config ~/.aws/config
@@ -19,9 +14,9 @@ echo "## set aws sns topic to env on ${NOP_APP_ID}"
 
 echo "export AWS_SNS_TOPIC=${AWS_SNS_TOPIC}" >> ~/.bash_profile
 
-set +u
+set +uo pipefail
 source ~/.bash_profile
-set -u
+set -uo pipefail
 
 echo "### aws version on ${NOP_APP_ID}"
 aws --version

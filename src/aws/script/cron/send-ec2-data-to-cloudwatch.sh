@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-set +u
+set +uo pipefail
 source ~/.bash_profile
-set -u
+set -uo pipefail
 
-sudo -E /usr/local/cloudwatch/aws-scripts-mon/mon-put-instance-data.pl --disk-space-util --disk-path=/data/ --from-cron
+sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c ssm:CloudWatchAgentNopParemeter -s
+sudo systemctl restart amazon-cloudwatch-agent.service
+sudo systemctl enable amazon-cloudwatch-agent.service

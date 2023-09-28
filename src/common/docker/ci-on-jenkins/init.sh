@@ -12,9 +12,8 @@ echo "## init data directory on ${NOP_APP_ID}"
 
 ./init-data.sh
 
-echo "## docker-compose up on ${NOP_APP_ID}"
+echo "## docker compose up on ${NOP_APP_ID}"
 
-docker-compose up -d
-sleep 30s
+docker compose up -d
 
 echo "# init docker completed on ${NOP_APP_ID}"

@@ -3,14 +3,15 @@ AWS
 ここではAWSにチーム開発環境を構築します。
 はじめに「アーキテクチャ」に軽く目を通して作成内容を確認してから、「事前準備」「インストール」に進みます。
 
-Collaborage 1.0.0をお使いの方で、アプリケーションのビルドにJava11を使用したい方は、「マイグレーション」に進んでください。
+環境構築後に既存環境のデータを移行する場合は「マイグレーション」に進んでください。
+GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAutoscaling」に進んでください。
 
 - [アーキテクチャ](#アーキテクチャ)
 - [事前準備](#事前準備)
 - [インストール](#インストール)
 - [オペレーション](#オペレーション)
-- [マイグレーション](#マイグレーション)
-
+- [マイグレーション](migration.md)
+- [GitLab RunnerのAutoscaling](autoscaling.md)
 
 ## アーキテクチャ
 
@@ -25,9 +26,9 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
   - CQ(Communication/Quality)サーバ
   - CI(Continuous Integration)サーバ
   - Demoサーバ
-- CQ/CIサーバのEC2はm4.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
-- Demoサーバはt2.small、ルートボリューム20GBでデフォルト提供します。
-- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m4.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
+- CQ/CIサーバのEC2はm6i.large、ルートボリューム20GB、データボリューム40GBでデフォルト提供します。
+- Demoサーバはt3.small、ルートボリューム20GBでデフォルト提供します。
+- GitLabを使う場合は、GitLabがリソースを消費するため、CIサーバのEC2のみ、m6i.xlarge、ルートボリューム40GB、データボリューム40GBでデフォルト提供します。
 - **上記のマシンスペックは推奨する最低限のスペックになります。PJの規模に合わせて変更してください。**
 
 
@@ -53,10 +54,9 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
 
 
 - CQ/CIサーバのディスク使用率のみ監視します。（Demoサーバは監視しません）
-- CQ/CIサーバのcronでシェルスクリプトを定期実行し、メトリクス(ディスク使用率)をCloudWatchに送信します。
+- CQ/CIサーバのCloudWatchAgentで、メトリクス(ディスク使用率)をCloudWatchに送信します。
 - デフォルトは5分間隔で送信します。
-- シェルスクリプトでは、[Amazon CloudWatch モニタリングスクリプト](http://aws.amazon.com/code/8720044071969977)を使って、メトリクスをCloudWatchに送信します。
-  - メトリクス取得の詳細は、[Amazon EC2 Linux インスタンスのメモリとディスクのメトリクスのモニタリング](http://docs.aws.amazon.com/ja_jp/AWSEC2/latest/UserGuide/mon-scripts.html)を参照してください。
+  - メトリクス取得の詳細は、[CloudWatch エージェントを使用して Amazon EC2 インスタンスとオンプレミスサーバーからメトリクス、ログ、トレースを収集する](https://docs.aws.amazon.com/ja_jp/AmazonCloudWatch/latest/monitoring/Install-CloudWatch-Agent.html)を参照してください。
   - どこかの処理で失敗すると、AWS CLIを使ってSNSのトピックにメッセージを発行します。
     - SNSのトピックにサブスクリプションとしてemailを設定しておくことで、メール通知を実現します。
 - CloudWatchでアラーム及びルールを手動で設定し、以下の場合にメール送信（SNS経由）します。
@@ -69,11 +69,12 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
 
 ### AWS
 
+- リソースの作成はアジアパシフィック (東京) リージョン（ap-northeast-1）で行います。
 - AWSマネジメントコンソールにアクセスし、図にあるリソースを作成します。
   - ![事前準備](images/aws-prepare-resources.png)
 - 既にある環境にインストールする場合は足りないリソースのみ作成します。
 - ネットワーク構成は[パブリックサブネットとプライベートサブネットを持つ VPC (NAT)](http://docs.aws.amazon.com/ja_jp/AmazonVPC/latest/UserGuide/VPC_Scenario2.html)を参照してください。
-- 各リソースの作成方法はAWSのドキュメントを参照するか、AWS有識者に相談してください。30分～1時間で作成できると思います。
+- 各リソースの作成方法はAWSのドキュメントを参照するか、AWS有識者に相談してください。30分～1時間程度で作成できます。
 - トピックにはemailのサブスクリプションも作成します。
 - ポリシーの作成は以下のjsonを使用してください。
   ```
@@ -86,6 +87,8 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
         "Action": [
           "sts:AssumeRole",
           "cloudwatch:PutMetricData",
+          "cloudwatch:DisableAlarmActions",
+          "cloudwatch:EnableAlarmActions",
           "ec2:CreateSnapshot",
           "ec2:CreateSnapshots",
           "ec2:CreateTags",
@@ -98,7 +101,8 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
           "ec2:DescribeFastSnapshotRestores",
           "ec2:DisableFastSnapshotRestores",
           "ec2:CopySnapshot",
-          "sns:Publish"
+          "sns:Publish",
+          "ssm:GetParameter"
         ],
         "Resource": [
           "*"
@@ -110,6 +114,7 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
 - ロールの信頼されたエンティティに以下を指定してください。
   - ec2.amazonaws.com
   - dlm.amazonaws.com
+  - scheduler.amazonaws.com
 
   設定には以下のjsonを使用してください。
   ```
@@ -121,7 +126,8 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
         "Principal": {
           "Service": [
             "ec2.amazonaws.com",
-            "dlm.amazonaws.com"
+            "dlm.amazonaws.com",
+            "scheduler.amazonaws.com"
           ]
         },
         "Action": "sts:AssumeRole"
@@ -129,11 +135,42 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
     ]
   }
   ```
+- System managerのパラメータストアに以下を指定して作成してください。
+  - 名前：CloudWatchAgentNopParemeter
+  - 利用枠：標準
+  - 値
+    ```json
+    {
+      "agent": {
+        "metrics_collection_interval": 300,
+       "region": "ap-northeast-1",
+        "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+        "debug": false
+      },
+      "metrics": {
+        "namespace":"CustomMetrics",
+        "append_dimensions": {
+          "InstanceId": "${aws:InstanceId}"
+        },
+        "metrics_collected": {
+          "disk": {
+            "measurement": [
+              "used_percent"
+            ],
+            "metrics_collection_interval": 300,
+            "resources": [
+              "/data"
+            ]
+          }
+        }
+      }
+    }
+    ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
-  - CQサーバ： nop-dev-cq-0.2.2
-  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-0.2.3
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-0.2.3
-  - Demoサーバ： nop-inst-demo-0.1.4
+  - CQサーバ： nop-dev-cq-2.0.0
+  - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-2.0.0
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.0.0
+  - Demoサーバ： nop-inst-demo-2.0.0
 
 ### 作業PC
 
@@ -214,10 +251,10 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
         - ![IAMのロール](images/aws-iam-role.png)
     - Ec2TypeForCi
       - CIサーバのインスタンスタイプを指定します。
-      - Jenkinsを使う場合は「m4.large」、GitLabを使う場合は「m4.xlarge」ぐらいあれば大丈夫だと思います。
+      - Jenkinsを使う場合は「m6i.large」、GitLabを使う場合は「m6i.xlarge」程度が目安です。
     - Ec2TypeForCq
       - Communication/Qualityサーバのインスタンスタイプを指定します。
-      - 「m4.large」ぐらいあれば大丈夫だと思います。
+      - 「m6i.large」程度が目安です。
     - Ec2TypeForDemo
       - Demoサーバのインスタンスタイプを指定します。
       - PJの要件(APサーバやDBサーバ等)に合わせて指定してください。
@@ -271,24 +308,27 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
 
 - Route 53にアクセスし、レコードセットを追加します。
   - ここでは、例として「adc-tis.com」というドメインへ追加しています。
-  - 「Hosted zones」を選択します。
-    - ![Route53のHostedZones](images/aws-r53-hostedzones.png)
-  - 「Domain Name」のリンクを選択します。
+  - 「ホストゾーン」を選択します。
+    - ![Route53のホストゾーン](images/aws-r53-hostedzones.png)
+  - 「ホストゾーン名」のリンクを選択します。
     - ![Route53のドメイン](images/aws-r53-domain.png)
   - レコードセットを追加します。
     - ![Route53のレコードセット](images/aws-r53-recordset.png)
-    - Name:
+    - レコード名:
       - サブドメインの名前を指定します。
       - ここで指定した名前が各EC2インスタンスへアクセスする際のホストになります。
       - アクセス先となるEC2インスタンスの用途（CQ、CI、Demo）に合わせた名前を指定します。
-    - Type:
+    - レコードタイプ:
       - IPv4のままです。
-    - Alias:
-      - Yesを選択します。
-    - Alias Target:
-      - EC2インスタンスの用途（CQ、CI、Demo）に合わせたALBを選びます。
-      - ALBの名前は「nop-alb-(cq|ci|demo)-xxxxx」で作成しています。
-      - フォーカスを合わせて入力欄を空にすると、存在しているALBがプルダウンにロードされます。
+    - エイリアス:
+      - On を選択します。
+    - トラフィックのルーティング先
+      - 以下の値を設定します
+        - Application Load Balancer と Classic Load Balancer へのエイリアス
+        - アジアパシフィック (東京)
+        - EC2インスタンスの用途（CQ、CI、Demo）に合わせたALB
+          - ALBの名前は「nop-alb-(cq|ci|demo)-xxxxx」で作成しています。
+          - フォーカスを合わせて入力欄を空にすると、存在しているALBがプルダウンにロードされます。
     - 以降の項目はデフォルトのままでCreateします。
     - EC2インスタンスごとにレコードセットを追加します。
 - ブラウザを開いて各EC2インスタンスのアプリにアクセスできることを確認します。
@@ -305,13 +345,13 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
   - アクセスできない場合は以下を確認してください。
     - ブラウザは、`https://` から始まるURLを表示しようとしていますか？ `https://` と入力したはずなのに、 `http://` から始まるURLを表示しようとしていることがあります。
     - Route53について以下を確認してください。
-      - 以前使ったサブドメインの名前を使ってませんか？使ったばかりの名前を再利用した場合、アクセスできるようになるまで時間が掛かるかもしれません。
+      - 以前使ったサブドメインの名前を使ってませんか？使ったばかりの名前を再使用した場合、アクセスできるようになるまで時間が掛かることがあります。
       - レコードセットを追加した際のALBの名前は、間違っていませんか？
     - AWSの以下のサービスは稼働していますか？ https://status.aws.amazon.com/ から確認してください。
       - Amazon Elastic Load Balancing
       - Amazon Elastic Compute Cloud
       - Amazon Route 53
-  - これらを確認して問題が無かった場合、ALBやRoute 53が使用可能になるまで、まだ時間が掛かるのかもしれません。10分程度時間おいてから、表示できるか試してください。
+  - これらを確認して問題が無かった場合、ALBやRoute 53が使用可能になるまで、時間が掛かっている可能性があります。10分程度時間おいてから、表示できるか試してください。
 
 
 ### AMIから作成したEC2インスタンスの初期設定を行います
@@ -339,46 +379,46 @@ Collaborage 1.0.0をお使いの方で、アプリケーションのビルドに
 
 
 CQサーバ/CIサーバのアプリはdocker-composeを使って起動しています。
-アプリの操作はSSHでアクセスして、docker-composeのコマンドで行います。
+アプリの操作はSSHでアクセスして、docker composeのコマンドで行います。
 
-docker-composeのコマンドは[コマンドリファレンス](http://docs.docker.jp/compose/reference/toc.html)を見てください。
+docker composeのコマンドは[コマンドリファレンス](http://docs.docker.jp/compose/reference/toc.html)を見てください。
 
 CQサーバ/CIサーバのアプリを操作する場所は次の通りです。
 
 - CQサーバ
   ```
-  /home/centos/nop/docker/cq
+  /home/ec2-user/nop/docker/cq
   ```
 - CIサーバ
   ```
-  /home/centos/nop/docker/ci
+  /home/ec2-user/nop/docker/ci
   ```
 
 #### アプリの起動
 
 ```
-$ docker-compose start
+$ docker compose start
 ```
 
 #### アプリの停止
 
 ```
-$ docker-compose stop
+$ docker compose stop
 ```
 
 #### アプリの一覧表示
 
 ```
-$ docker-compose ps
+$ docker compose ps
 ```
 - Name列にサービス名が表示されます。
 
 #### アプリのログ確認
 
 ```
-$ docker-compose logs <サービス名>
+$ docker compose logs <サービス名>
 ```
-- 「docker-compose ps」コマンドでサービス名を確認します。
+- 「docker compose ps」コマンドでサービス名を確認します。
 
 
 ### アプリの復元方法(アプリ/アプリデータ)
@@ -432,10 +472,6 @@ $ docker-compose logs <サービス名>
     ```
     $ crontab -r
     ```
-  - AWS CLIのキャッシュ(インスタンスID)を削除します。
-    ```
-    $ sudo rm /var/tmp/aws-mon/instance-id
-    ```
   - cronを設定します。
     ```
     $ cd ~/nop/script/
@@ -469,7 +505,7 @@ SSHでサーバにアクセスし、エラーログの内容を確認してく�
 CQサーバ/CIサーバともに、以下の場所にエラーログが出力されます。
 
 ```
-/home/centos/nop/log/
+/home/ec2-user/nop/log/
 ```
 
 
@@ -538,7 +574,7 @@ Collaborage固有のトピックである1と3について記載ます。
 
 - アプリを停止して削除します。
   ```
-  $ docker-compose down
+  $ docker compose down
   ```
 
 - バージョンアップ失敗時に簡単に切り戻せるようにするため、以下のディレクトリのバックアップを取ってください。
@@ -573,7 +609,7 @@ Collaborage固有のトピックである1と3について記載ます。
 - バージョンアップ時に必要な設定変更がある場合は、 `docker-compose.yml` の修正、または `/data` ディレクトリに存在する各アプリのデータファイルを修正して対応します。
 - Dockerfileを修正した場合は、イメージのビルドを行います。  
   ```
-  $ docker-compose build --no-cache
+  $ docker compose build --no-cache
   ```
 - [CQサーバの設定を変更します](ami.md#cqサーバの設定を変更します) または、 [CIサーバの設定を変更します](ami.md#ciサーバの設定を変更します) の「アプリを作り直します」の手順を参照して、アプリを作り直します。
 - バージョンアップしたアプリの動作確認を行います。
@@ -585,109 +621,3 @@ Collaborage固有のトピックである1と3について記載ます。
   $ rm -rf  ~/nop/docker-bak
   $ sudo rm -rf  /data-bak
   ```
-
-
-## マイグレーション
-
-### Java 11対応アプリケーションへのバージョンアップ
-
-#### 事前準備
-
-- [作業場所を準備します](#作業場所を準備します)で用意した作業場所に、新しいCollaborageをクローンします。
-  ```
-  $ git clone https://github.com/Fintan-contents/collaborage.git collaborage-1.1.0
-  ```
-
-#### CQサーバ
-
-##### バックアップ
-- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CQサーバのバックアップを取得してください。
-
-##### Redmine
-
-Redmineが使用しているモジュールの新バージョンが2020年1月にリリースされました。  
-この影響で「アプリを停止して削除」した後、新しいモジュールを取得してしまい起動しないことがありますので、対策を行ったファイルをCQサーバに配置します。  
-
-
-- ファイルを配置します。
-  ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine-sub-uri.sh nop-cq:/home/centos/nop/docker/cq/
-  $ scp -F .ssh/ssh.config -r <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/cq/redmine nop-cq:/home/centos/nop/docker/cq/
-  ```
-
-
-##### SonarQube
-
-- [バージョンアップを行う](#バージョンアップを行う)を参照して、SonarQubeのイメージのバージョンを `sonarqube:6.7.5-alpine` に上げてください。
-- ブラウザでアクセスします。
-    ```
-    <CQサーバのホスト>/sonarqube
-    ```
-- 管理者でログインします。
-  - 画面右上の「Log in」を選択します。
-    - Login: admin
-    - Password: pass123-
-- 画面上部の「Administration」＞「Marketplace」を選択します。
-- プラグインの一覧の中から「SonarJava」を探し、「Update to 5.9.2 (build 16552)」ボタンをクリックします。
-- ボタンが表示されていた個所に「Update Pending」と表示されるまで待ちます。
-- 画面上部に「Restart」が表示されていますので、クリックします。
-- しばらく待つとログイン画面が表示されるので、管理者でログインします。
-- プラグインの一覧の中から「SonarJava」を探し、「Update」ボタンが消えていることを確認します。
-
-
-##### バックアップの削除
-
-- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CQサーバのバックアップを削除してください。
-
-
-#### CIサーバ 
-
-##### バックアップ
-
-- [アプリの削除とバックアップ取得を行う](#アプリの削除とバックアップ取得を行う)を参照して、CIサーバのバックアップを取得してください。
-
-##### Jenkins
-- Jenkinsのデータを削除します。  
-  中間のバージョンをスキップして、データを残したままバージョンアップを行うと失敗することがありますので、データを削除することを強くお勧めします。  
-  jenkinのビルド結果で保存しておきたいものがある場合は、あらかじめ `/data/jenkins/` の内容を退避しておいてください。  
-  ```
-  $ ssh -F .ssh/ssh.config nop-ci
-  $ sudo su -
-  $ sudo rm -rf /data/jenkins/*
-  ```
-
-- JenkinsのDockerfileの配置場所をCIサーバに作ります。
-  ```
-  $ ssh -F .ssh/ssh.config nop-ci
-  $ mkdir -p ~/nop/docker/ci/dockerfiles/jenkins
-  $ exit
-  ```
-- JenkinsのDockerfileをCIサーバに配置します。  
-  (このDockerfileは `jenkins/jenkins:2.190.3` を使用するように構成されています)
-  ```
-  $ scp -F .ssh/ssh.config <新しいCollaborageのクローン先>/collaborage-1.1.0/src/common/docker/ci-on-jenkins/dockerfiles/jenkins/Dockerfile nop-ci:/home/centos/nop/docker/ci/dockerfiles/jenkins/
-  ```
-- プロキシ環境下の場合は、[CIサーバの設定を変更します](ami.md#CIサーバの設定を変更します)の「プロキシ環境下でJenkinsを使用する場合」を参照して、設定を追記してください。
-- [バージョンアップを行う](#バージョンアップを行う)を参照して、Jenkinsのバージョンを上げてください。
-  - 先ほど配置したDockerfileを使用するようにdocker-compose.ymlを構成します。  
-    以下に該当箇所を記載します。
-    ```
-    (中略)
-      jenkins:
-        container_name: jenkins
-        build:
-          context: ./dockerfiles/jenkins
-          args:
-            http_proxy: $http_proxy
-            https_proxy: $https_proxy
-        restart: always
-    (中略)
-    ```
-
-- アプリの初期設定の[Jenkins](./init.md#jenkins)を参照して、設定を行います。
-- [jenkinsでのci追加](./dev.md#jenkinsでのci追加)を参照して、設定を行います。  
-  解説中にJava 11でビルドする場合の設定方法が記載されています。
-
-##### バックアップの削除
-
-- [バックアップの削除を行う](#バックアップの削除を行う)を参照して、CIサーバのバックアップを削除してください。

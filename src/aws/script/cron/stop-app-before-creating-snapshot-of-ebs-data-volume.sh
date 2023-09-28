@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-set +u
+set +uo pipefail
 source ~/.bash_profile
-set -u
+set -uo pipefail
 
 export PATH="/usr/local/bin:$PATH"
 
-# stop docker-compose
-cd /home/centos/nop/docker/${NOP_APP_ID}
-docker-compose stop
+# stop docker compose
+cd /home/ec2-user/nop/docker/${NOP_APP_ID}
+docker compose stop

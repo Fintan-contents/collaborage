@@ -6,12 +6,13 @@ version_file = IO.read(redmine_version_file)
 redmine_version_minor = version_file.match(/MINOR =/).post_match.match(/\d/)[0].to_i
 redmine_version_major = version_file.match(/MAJOR =/).post_match.match(/\d/)[0].to_i
 
-gem "holidays", "~>1.0.3"
-gem "icalendar", "2.5.3"
-#gem "nokogiri"
+gem "holidays", "< 3.0.0"
+gem "icalendar"
+#gem "nokogiri", ">= 1.6.7.2"
 gem "open-uri-cached"
 gem "prawn"
 gem 'json'
+gem 'sidekiq'
 
 group :development do
   gem "inifile"
@@ -25,11 +26,11 @@ group :test do
   gem 'cucumber-rails', require: false
   gem "culerity"
   gem "cucumber"
-  #gem "capybara", "~> 1"
+  #gem "capybara", "~> 1.0"
   #gem "faye-websocket"
   gem "poltergeist"
   gem "database_cleaner"
-  gem "gherkin"
+  #gem "gherkin"
   gem "rspec"
   gem "rspec-rails"
   gem "ruby-prof", :platforms => [:ruby]
@@ -40,4 +41,4 @@ end
 
 # moved out of the dev group so backlogs can be tested by the user after install. Too many issues of weird setups with apache, nginx, etc.
 # thin doesn't work for jruby
-#gem "thin", :platforms => [:ruby]
+gem "thin", :platforms => [:ruby]
