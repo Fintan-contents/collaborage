@@ -46,7 +46,7 @@ OSS化にあたって、より親しみをもってもらえるよう**Collabora
 |     | SonarQube(Community Edition) | 10.1.0  | 
 | CI  | Jenkins                      | 2.414.1 | 
 |     | GitBucket                    | 4.38.4  | 
-|     | GitLab (Community Edition)   | 16.0.1  | 
+|     | GitLab (Community Edition)   | 16.0.6  | 
 |     | Nexus Repository Manager 3   | 3.55.0  | 
 
 
