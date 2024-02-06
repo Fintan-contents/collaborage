@@ -55,7 +55,7 @@ services:
 
   gitlab-db:
     container_name: gitlab-db
-    image: postgres:15.3-alpine
+    image: postgres:14.9-alpine
     restart: always
     env_file: ./common.env
     environment:

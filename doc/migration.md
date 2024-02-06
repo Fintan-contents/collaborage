@@ -2,7 +2,8 @@
 ================================
 
 ここでは、既存のCollaborage環境からCollaborage 2.0.0環境へのデータ移行を行います。  
-Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション手順](https://github.com/Fintan-contents/collaborage/blob/1.1.0/doc/aws.md#%E3%83%9E%E3%82%A4%E3%82%B0%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)もご参照ください。
+Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション手順](https://github.com/Fintan-contents/collaborage/blob/1.1.0/doc/aws.md#%E3%83%9E%E3%82%A4%E3%82%B0%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)もご参照ください。  
+Collaborage 2.0.0をお使いの方は、こちらの[GitLab用DBのダウングレード](#gitlab用dbのダウングレード)もご参照ください。
 
 # 前提
 - 各ミドルウェアのマイグレーション前後のバージョンは下記を想定しています。  
@@ -36,7 +37,7 @@ Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション�
   |     | GitBucket                       | 4.31.1  | 4.38.4   | 完全移行             |
   |     | GitBucket DB(PostgreSQL)        | 9.5.7   | 15.3     | -                |
   |     | GitLab (Community Edition)      | 12.4.2  | 16.0.6   | パイプライン再作成＋参照環境作成 |
-  |     | GitLab DB(PostgreSQL)           | 9.5.7   | 15.3     | -                |
+  |     | GitLab DB(PostgreSQL)           | 9.5.7   | 14.9     | -                |
   |     | GitLab Runner                   | 12.4.1  | 16.1.0   | -                |
   |     | Nexus Repository Manager 3  　   | 3.19.1  | 3.55.0   | 完全移行　            |
 - 移行前のサーバと移行後のサーバは同一VPC上に存在していることを想定しています。
@@ -1089,3 +1090,83 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
     $ rm -rf ~/nop/backup
     ```
   - 移行先のCIサーバ、移行元のCQサーバ、CIサーバでも同様にディレクトリを削除します。
+
+# GitLab用DBのダウングレード
+- GitLab用のDB（PostgreSQL）のバージョンを15.3から14.9にダウングレードします。  
+  ダウングレードの実施理由は[Changelog](../CHANGELOG.md)を参照してください。
+
+### 概要
+- 下記データのバックアップを実施し、DBのダウングレード後リストアを行います。
+  - リポジトリ情報（パイプライン、issue等の情報を含む）
+  - ユーザ情報
+
+### 手順
+- バックアップを作成します。
+  - SSHでCIサーバに接続します。
+  - バックアップ用のディレクトリを作成します。
+    ```
+    $ mkdir -p ~/nop/backup/gitlab
+    ```
+  - コンテナを停止します。
+    ```
+    $ cd nop/docker/ci
+    $ docker compose stop gitlab gitlab-runner && docker compose rm -f gitlab gitlab-runner
+    ```
+  - DBのバックアップを作成します。
+    ```
+    $ docker exec gitlab-db bash -c "pg_dump -U gitlab -h localhost -Fc --file=/var/lib/postgresql/data/gitlab-db.dump gitlab"
+    $ sudo cp /data/gitlab-db/gitlab-db.dump ~/nop/backup/gitlab
+    ```
+  - DBを停止します。
+    ```
+    $ docker compose stop gitlab-db && docker compose rm -f gitlab-db 
+    ```
+- DBコンテナのイメージを変更します。
+  - docker-compose.ymlを編集します。
+    ```
+    $ vi docker-compose.yml
+    ```
+    ```
+    gitlab-db:
+      container_name: gitlab-db
+      #image: postgres:15.3-alpine
+      image: postgres:14.9-alpine
+    ```
+    - 既存のデータディレクトリを削除します。
+      ```
+      $ sudo su -
+      $ sudo rm -rf /data/gitlab-db/*
+      $ exit
+      ```
+    - DBコンテナを起動します。
+      ```
+      $ docker compose up -d gitlab-db
+      ```
+- バックアップをリストアします。
+  - DBのバックアップをリストアします。
+    ```
+    $ sudo cp ~/nop/backup/gitlab/gitlab-db.dump /data/gitlab-db/
+    $ docker exec gitlab-db bash -c "pg_restore -U gitlab -h localhost -d gitlab /var/lib/postgresql/data/gitlab-db.dump"
+    $ sudo rm -rf /data/gitlab-db/gitlab-db.dump
+    ```
+  - コンテナを起動します。
+    ```
+    $ docker compose up -d gitlab gitlab-runner
+    ```
+- 動作確認を行います。
+  - ブラウザでアクセスします。
+    ```
+    <CIサーバのホスト>/gitlab
+    ```
+  - ログインしてデータの移行ができていることを確認します。
+
+- 動作確認完了後、作成したバックアップファイルを削除します。
+  - バックアップ用データ配置用のディレクトリを削除します
+    ```
+    $ rm -rf ~/nop/backup
+    ```
+  - SSHを切断します。
+    ```
+    $ exit
+    ```
+  

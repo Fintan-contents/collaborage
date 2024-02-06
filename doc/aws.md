@@ -169,7 +169,7 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
   - CQサーバ： nop-dev-cq-2.0.0
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-2.0.0
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.0.0
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.1.0
   - Demoサーバ： nop-inst-demo-2.0.0
 
 ### 作業PC
