@@ -226,7 +226,7 @@ home
     ```
     - こんな感じになります。
       ```
-      http.proxyHost=192.0.2.1:3128
+      http.proxyHost=192.0.2.1
       http.proxyPort=3128
       ```
 - アプリを作り直します。
