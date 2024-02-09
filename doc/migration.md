@@ -1093,7 +1093,7 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
 
 # GitLab用DBのダウングレード
 - GitLab用のDB（PostgreSQL）のバージョンを15.3から14.9にダウングレードします。  
-  ダウングレードの実施理由は[Changelog](https://github.com/Fintan-contents/collaborage/blob/2.1.0/CHANGELOG.md)を参照してください。
+  ダウングレードの実施理由は[Changelog](../CHANGELOG.md#210---2024-03-dd)を参照してください。
 
 ### 概要
 - 下記データのバックアップを実施し、DBのダウングレード後リストアを行います。
