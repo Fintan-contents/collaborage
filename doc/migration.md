@@ -1,7 +1,7 @@
 データ移行
 ================================
 
-ここでは、既存のCollaborage環境からCollaborage 2.0.0環境へのデータ移行を行います。  
+ここでは、既存のCollaborage環境からCollaborage 2.1.0環境へのデータ移行を行います。  
 Collaborage 1.0.0をお使いの方は、こちらの[マイグレーション手順](https://github.com/Fintan-contents/collaborage/blob/1.1.0/doc/aws.md#%E3%83%9E%E3%82%A4%E3%82%B0%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3)もご参照ください。  
 Collaborage 2.0.0をお使いの方は、こちらの[GitLab用DBのダウングレード](#gitlab用dbのダウングレード)もご参照ください。
 
@@ -1093,7 +1093,7 @@ Jenkins、GitLabはマウントディレクトリやDBのリストアを行っ�
 
 # GitLab用DBのダウングレード
 - GitLab用のDB（PostgreSQL）のバージョンを15.3から14.9にダウングレードします。  
-  ダウングレードの実施理由は[Changelog](../CHANGELOG.md)を参照してください。
+  ダウングレードの実施理由は[Changelog](https://github.com/Fintan-contents/collaborage/blob/2.1.0/CHANGELOG.md)を参照してください。
 
 ### 概要
 - 下記データのバックアップを実施し、DBのダウングレード後リストアを行います。
