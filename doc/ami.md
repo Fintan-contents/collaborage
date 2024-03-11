@@ -1175,9 +1175,6 @@ home
         DEMO_PORT: <DemoサーバのSSHのポート番号>
         DEMO_USERNAME: <DemoサーバのSSHのユーザ名>
         DEMO_PASSWORD: <DemoサーバのSSHのパスワード>
-        CI_HOST: <CIサーバのホスト>
-        NEXUS_USER: <Nexusのユーザ名>
-        NEXUS_PASSWORD: <Nexusのパスワード>
       ```
       - [URLの仕組み](url.md)を参照し、環境に合わせて適切なURL指定を行ってください。
       - パラメータの設定は以下のような感じになります。  
@@ -1192,9 +1189,6 @@ home
           DEMO_PORT: 22
           DEMO_USERNAME: ec2-user
           DEMO_PASSWORD: pass789-
-          CI_HOST: 192.0.2.3
-          NEXUS_USER: admin
-          NEXUS_PASSWORD: pass123-
         ```
   - パイプラインで使うMavenの設定を変更します。
     ```
