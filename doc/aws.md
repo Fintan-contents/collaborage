@@ -135,7 +135,7 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
     ]
   }
   ```
-- System managerのパラメータストアに以下を指定して作成してください。
+- Systems managerのパラメータストアに以下を指定して作成してください。
   - 名前：CloudWatchAgentNopParemeter
   - 利用枠：標準
   - 値
@@ -167,9 +167,9 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
     }
     ```
 - インストールにはCollaborageが提供するAMIを使用します。AMIはパブリックイメージとして公開しています。
-  - CQサーバ： nop-dev-cq-2.0.0
+  - CQサーバ： nop-dev-cq-2.1.0
   - CIサーバ(GitBucket/Jenkins)： nop-dev-ci-jenkins-2.0.0
-  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.0.0
+  - CIサーバ(GitLab)： nop-dev-ci-gitlab-2.1.0
   - Demoサーバ： nop-inst-demo-2.0.0
 
 ### 作業PC
