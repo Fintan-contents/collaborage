@@ -75,7 +75,8 @@ GitLab RunnerのAutoscaling機能を使用したい方は「GitLab RunnerのAuto
 - 既にある環境にインストールする場合は足りないリソースのみ作成します。
 - ネットワーク構成は[パブリックサブネットとプライベートサブネットを持つ VPC (NAT)](http://docs.aws.amazon.com/ja_jp/AmazonVPC/latest/UserGuide/VPC_Scenario2.html)を参照してください。
 - 各リソースの作成方法はAWSのドキュメントを参照するか、AWS有識者に相談してください。30分～1時間程度で作成できます。
-- トピックにはemailのサブスクリプションも作成します。
+- トピックにはemailのサブスクリプションも作成します。  
+  EC2インスタンスの監視時に検知した異常は、サブスクリプションで登録したemailに通知されます。
 - ポリシーの作成は以下のjsonを使用してください。
   ```
   {
